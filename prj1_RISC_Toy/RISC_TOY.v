@@ -1,17 +1,6 @@
-/*****************************************
-    
-    Team XX : 
-        2024000000    Kim Mina
-        2024000001    Lee Minho
-*****************************************/
+`timescale 1ns/1ps
+`default_nettype none
 
-
-// You are able to add additional modules and instantiate in RISC_TOY.
-
-
-////////////////////////////////////
-//  TOP MODULE
-////////////////////////////////////
 module RISC_TOY (
     input     wire              CLK,
     input     wire              RSTN,
@@ -25,114 +14,149 @@ module RISC_TOY (
     input     wire    [31:0]    DRDATA
 );
 
+  ////////////////////
+  // 주요 구성 요소
+  ////////////////////
+  // 현재 명령어 주소를 추적하는 프로그램 카운터 (PC)
+  reg [31:0] pc;
+  // 명령어를 임시로 저장하는 레지스터
+  reg [31:0] instruction;
 
-    // WRITE YOUR CODE
-	
-	////////// EX_MEM //////////
+  // 파이프라인 단계에 대한 제어 플래그
+  reg decoder_enabled;
+  reg executer_enabled;
+  reg writer_enabled;
+  reg [3:0] conditional_jump_count;
 
-    reg [4:0] XM_op, XM_ra;                                    // opcode 5bit _ dest reg add
-    reg [31:0] XM_aluout, XM_rv1, XM_rv2, XM_instr;            // alu result _ valA _ valB _ caculate store
-    reg [29:0] XM_iaddr;                                       // instruction add (PC) => DADDR
+  ////////////////////
+  // 출력 신호
+  ////////////////////
+  assign IADDR = pc[31:2];
+  assign IREQ = 1;
 
-    reg XM_we, XM_wer;  // 계산 결과가 여기서 나올꺼라 여기서 설정해놔야 함 reg write는 굳이 mem 안가도 될꺼 같고...
+  ////////////////////
+  // 초기 값 설정
+  ////////////////////
+  integer reg_index;
+  initial begin
+    pc <= 0;
+    decoder_enabled <= 1;
+    executer_enabled <= 1;
+    writer_enabled <= 1;
+    conditional_jump_count <= 3'b0;
+  end
 
-    // in  XM_iaddr, XM_rv1, XM_rv2, XM_ra
-    // out XM_aluout, XM_rv2, XM_instr*
-
-
-
-    ////////// MEM_WB //////////
-
-    reg [4:0] MW_op, MW_ra;                                     // opcode 5bit _ dest reg add
-    reg [31:0] MW_aluout, MW_rv1, MW_rv2, MW_instr, WB_instr;   // alu result _ valA _ valB _ 어떤 계산 _ 어떤 계산
-    reg [29:0] MW_iaddr;                                        // P
-    reg MW_wer, MW_we;  // 계산 결과 이어받음 이게 mem에 연결되서 wer에서 enable되면 reg에 저장하고 we에서 enable되면 mem에 저장
-
-
-
-
-
-
-    // REGISTER FILE FOR GENRAL PURPOSE REGISTERS
-    REGFILE    #(.AW(5), .ENTRY(32))    RegFile (
-                    .CLK    (CLK),
-                    .RSTN   (RSTN),
-                    .WEN    (XM_wer),
-                    .WA     (regwriteaddr),
-                    .DI     (regwritedata),
-                    .RA0    (),
-                    .RA1    (),
-                    .DOUT0  (),
-                    .DOUT1  ()
-    );
-
-    //regwriteaddr와 regwritedata 구현
-    wire [31:0] regwritedata;
-    wire [4:0] regwriteaddr;
-
-    assign regwritedata = ((XM_instr[31:27] == 5'b10000) | (XM_instr[31:27] == 5'b10010)) ? (DE_iaddr + 4) : 
-    ((XM_instr[31:27] == 5'd19) | (XM_instr[31:27] == 5'd20) ? DRDATA : XM_aluout);
-
-    assign regwriteaddr = ((XM_instr[31:27] == 5'b10000) | (XM_instr[31:27] == 5'b10010)) ? XM_instr[26:22] : 
-    ((XM_instr[31:27] == 5'd19) | (XM_instr[31:27] == 5'd20) ? XM_ra: XM_ra);
-
-    // WRITE YOUR CODE
-
-    /////////////////EX_MEM/////////////////
-    always @(posedge CLK or negedge RSTN) begin
-        if(~RSTN) begin
-            XM_op <= 0;
-            XM_we <= 0;
-            XM_wer <= 0;
-            XM_rv1 <= 0;
-            XM_rv2 <= 0;
-            XM_ra <= 0;
-            XM_aluout <= 0;
-            XM_iaddr <= 0;
-            XM_instr <= 0;
-        end
-        else begin
-            XM_op <= ;      //  ex 받아온 opcode
-            XM_we <= ;      //  ex 받아온
-            XM_wer <= ;
-            XM_rv1 <= ;
-            XM_rv2 <= ;
-            XM_ra <= ;
-            XM_aluout <= ;
-            XM_iaddr <= ;
-            XM_instr <= ;
-        end 
+  ////////////////////
+  // 명령어 가져오기 (IF) 단계
+  ////////////////////
+  always @(posedge CLK or negedge RSTN) begin
+    if (!RSTN) begin
+      pc <= 0;
+      conditional_jump_count <= 0;
+      decoder_enabled <= 1;
+    end else begin
+      instruction <= INSTR;
+	 decoder (
+    .CLK(CLK),
+    .RSTN(RSTN),
+    .decoder_enabled(decoder_enabled),
+    .instruction(IF_ID_INSTR),
+    .pc(IF_ID_PC),
+    .register_file(register_file),
+    .ID_EX_PC(ID_EX_PC),
+    .ID_EX_INSTR(ID_EX_INSTR),
+    .ID_EX_REG_A(ID_EX_REG_A),
+    .ID_EX_REG_B(ID_EX_REG_B)
+  );
+      if (conditional_jump_count == 0) begin
+        pc <= pc + 4;
+      end else if (conditional_jump_count == 1) begin
+        conditional_jump_count <= 2;
+        pc <= EX_MEM_ALU_RESULT - 4;
+      end else if (conditional_jump_count == 2) begin
+        conditional_jump_count <= 0;
+        decoder_enabled <= 1;
+        pc <= pc + 4;
+      end else begin
+        pc <= pc + 4;
+      end
     end
+  end
 
-    assign DWDATA = DRW ? XM_rv2 : 0;
-    assign DADDR = XM_aluout : // ALU_OUT********
-    assign DRW = ~XM_we;
+  ////////////////////
+  // 레지스터 파일 모듈 인스턴스화
+  ////////////////////
+  REGFILE #(.AW(5), .ENTRY(32)) RegFile (
+    .CLK    (CLK),
+    .RSTN   (RSTN),
+    .WEN    (),
+    .WA     (),
+    .DI     (),
+    .RA0    (),
+    .RA1    (),
+    .DOUT0  (),
+    .DOUT1  ()
+  );
 
-    /////////////////MEM_WB/////////////////
-    always @(posedge CLK or negedge RSTN) begin
-        if(~RSTN) begin
-            MW_op <= 0;
-            MW_we <= 0;
-            MW_wer <= 0;
-            MW_ra <= 0;
-            MW_rv1 <= 0;
-            MW_rv2 <= 0;
-            MW_aluout <= 0;
-            MW_iaddr <= 0;
-            MW_instr <= 0;
-        end
-        else begin
-            MW_op <= XM_op;
-            MW_we <= XM_we;
-            MW_wer <= XM_wer;
-            MW_ra <= XM_ra;
-            MW_rv1 <= XM_rv1;
-            MW_rv2 <= XM_rv2;
-            MW_aluout <= XM_aluout;
-            MW_iaddr <= XM_iaddr;
-            MW_instr <= XM_instr;
-        end
-    end
+  ////////////////////
+  // 명령어 디코드 (ID) 단계
+  ////////////////////
+  decoder (
+    .CLK(CLK),
+    .RSTN(RSTN),
+    .decoder_enabled(decoder_enabled),
+    .instruction(IF_ID_INSTR),
+    .pc(IF_ID_PC),
+    .register_file(register_file),
+    .ID_EX_PC(ID_EX_PC),
+    .ID_EX_INSTR(ID_EX_INSTR),
+    .ID_EX_REG_A(ID_EX_REG_A),
+    .ID_EX_REG_B(ID_EX_REG_B)
+  );
 
+  ////////////////////
+  // 실행 (EX) 단계
+  ////////////////////
+  excute (
+    .CLK(CLK),
+    .RSTN(RSTN),
+    .executer_enabled(executer_enabled),
+    .ID_EX_REG_A(ID_EX_REG_A),
+    .ID_EX_REG_B(ID_EX_REG_B),
+    .EX_MEM_ALU_RESULT(EX_MEM_ALU_RESULT),
+    .EX_MEM_REG_B(EX_MEM_REG_B)
+  );
+
+  ////////////////////
+  // 메모리 접근 (MEM) 단계
+  ////////////////////
+  mem (
+    .CLK(CLK),
+    .RSTN(RSTN),
+    .EX_MEM_ALU_RESULT(EX_MEM_ALU_RESULT),
+    .EX_MEM_REG_B(EX_MEM_REG_B),
+    .DADDR(DADDR),
+    .DREQ(DREQ),
+    .DRW(DRW),
+    .DWDATA(DWDATA),
+    .DRDATA(DRDATA),
+    .MEM_WB_ALU_RESULT(MEM_WB_ALU_RESULT),
+    .MEM_WB_MEM_DATA(MEM_WB_MEM_DATA)
+  );
+
+  ////////////////////
+  // 쓰기 (WB) 단계
+  ////////////////////
+  wb (
+    .CLK(CLK),
+    .RSTN(RSTN),
+    .writer_enabled(writer_enabled),
+    .MEM_WB_ALU_RESULT(MEM_WB_ALU_RESULT),
+    .MEM_WB_MEM_DATA(MEM_WB_MEM_DATA),
+    .ID_EX_INSTR(ID_EX_INSTR),
+    .register_file(register_file)
+  );
 
 endmodule
+`default_nettype wire
+
