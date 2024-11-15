@@ -14,7 +14,11 @@ module RISC_TOY (
     input     wire    [31:0]    DRDATA
 );
 
-
+	reg [4:0] read_address0, read_address1;
+	wire [31:0] read_data0, read_data1;
+	reg WEN;
+	reg [4:0]write_address;
+	wire [31:0] write_data
 
   ////////////////////
   // 레지스터 파일 모듈 인스턴스화
@@ -22,15 +26,91 @@ module RISC_TOY (
   REGFILE #(.AW(5), .ENTRY(32)) RegFile (
     .CLK    (CLK),
     .RSTN   (RSTN),
-    .WEN    (),
-    .WA     (),
-    .DI     (),
-    .RA0    (),
-    .RA1    (),
-    .DOUT0  (),
-    .DOUT1  ()
+	  .WEN    (WEN),
+	  .WA     (write_address),
+	  .DI     (write_data),
+	  .RA0    (read_address0),
+	  .RA1    (read_address1),
+	  .DOUT0  (read_data0),
+	  .DOUT1  (read_data1)
   );
 	reg [4:0]opcode <= INSTR[31:27];
+	reg [31:0] valA;
+	reg [31:0] valB;
+	reg [31:0] offset;
+	reg [4:0] dest;
+	wire ADDI = (opcode == 5'b00000);
+	wire ANDI = (opcode == 5'b00001);
+	wire ORI = (opcode == 5'b00010);
+	wire MOVI = (opcode == 5'b00011);
+	wire ADD = (opcode == 5'b00100);
+	wire SUB = (opcode == 5'b00101);
+	wire NEG = (opcode == 5'b00110);
+	wire NOT = (opcode == 5'b00111);
+	wire AND = (opcode == 5'b01000);
+	wire OR = (opcode == 5'b01001);
+	wire XOR = (opcode == 5'b01010);
+	wire LSR = (opcode == 5'b01011);
+	wire ASR = (opcode == 5'b01100);
+	wire SHL = (opcode == 5'b01101);
+	wire ROR = (opcode == 5'b01110);
+	wire BR = (opcode == 5'b01111);
+	wire BRL = (opcode == 5'b10000);
+	wire J = (opcode == 5'b10001);
+	wire JL = (opcode == 5'b10010);
+	wire LD = (opcode == 5'b10011);
+	wire LDR = (opcode == 5'b10100);
+	wire ST = (opcode == 5'b10101);
+	wire STR = (opcode == 5'b10110);
+
+	//////////////
+	//Decode stage
+	//////////////
+	always @(posedge CLK or negedge RSTN) begin
+		if(!RSTN) begin
+			read_address0 <= 0;
+			read_address1 <= 0;
+			INSTR <= 0;
+			valA <= 0;
+			valB <= 0;
+			offset <= 0;
+			dest <= 0;
+		end else if(ADDI || ANDI || ORI || LD || ST || MOVI) begin //MOVI 주의
+			read_address0 <= INSTR[26:22];
+			read_address1 <= INSTR[21:17];
+			valA <= read_data1; valB <= read_data0; 
+			offset <= {15'b0, INSTR[16:0]}; dest <= INSTR[26:22];
+		end else if(ADD || SUB || AND || OR || XOR || NEG || NOT) begin 
+			//NEG, NOT 주의
+			read_address0 <= INSTR[21:17];
+			read_address1 <= INSTR[16:12];
+			valA <= read_data0; valB <= read_data1; 
+			offset <= {15'b0, INSTR[26:22]}; dest <= INSTR[26:22];
+		end else if(LSR || ASR || SHL || ROR) begin 
+			read_address0 <= INSTR[21:17];
+			if (INSTR[5] == 0)
+				valB <= INSTR[4:0];
+			else begin
+				read_address1 <= INSTR[16:12];
+				valB <= read_data1;
+			end
+			valA <= read_data0;  
+			offset <= INSTR[26:22]; dest <= INSTR[26:22];
+		end else if(BR || BRL) begin 
+			read_address0 <= INSTR[21:17];
+			read_address1 <= INSTR[16:12];
+			valA <= read_data0; valB <= read_data1; 
+			//offset <= INSTR[26:22]; dest <= INSTR[26:22];
+		end else if(J || JL || LDR || STR) begin 
+			read_address0 <= INSTR[21:17];
+			read_address1 <= INSTR[16:12];
+			//valA <= read_data0; valB <= read_data1; 
+			offset <= INSTR[21:0]; dest <= INSTR[21:0];
+	end
+
+
+	
+	
 	
  
 endmodule
