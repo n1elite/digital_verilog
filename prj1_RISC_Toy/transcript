@@ -1,2 +1,10 @@
 # Reading pref.tcl
-# OpenFile C:/d_project/reference/prj1_RISC_Toy/prj1_RISC_Toy/model.v
+# error: Layout::Clairvoyance can't read "map(D)": no such element in array
+# can't read "map(D)": no such element in array
+#     while executing
+# "Layout::Clairvoyance"
+# error stack: INNER
+# invokeStk1 Layout::Clairvoyance
+# CALL
+# GUIMAIN
+# OpenFile {C:/Users/lovem/Desktop/24DÄ 2Y0/$¸/prj1_RISC_Toy/prj1_RISC_Toy/RISC_TOY.v}
