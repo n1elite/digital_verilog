@@ -105,7 +105,7 @@ module RISC_TOY (
 			read_address0 <= INSTR[21:17];
 			read_address1 <= INSTR[16:12];
 			//valA <= read_data0; valB <= read_data1; 
-			offset <= INSTR[21:0]; dest <= INSTR[21:0];
+			offset <= INSTR[21:0]; //dest <= INSTR[21:0];
 	end
 
 
