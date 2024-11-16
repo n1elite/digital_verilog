@@ -111,7 +111,7 @@ module RISC_TOY (
 
     //clock code**********************
 
-
+//
 
 
 
@@ -190,8 +190,81 @@ module RISC_TOY (
     //     end
 	// end
 
+//ALU
+// ALU	
+module ALU (
+input signed [31:0]valA,
+input signed [31:0]valB,
+input signed [31:0]offset,
+input  [4:0]ALUop, //ALU operate determine
+input ALUdo,//ALU execution sign
+output reg signed [31:0]Result,
+);
+	
+always@(posedge CLK)
+case(ALUop)
 
+// ADDI
+Result = valB + {{15{offset[16]}}, offset[16:0}}; //offset 부호확장
 
+// ANDI
+Result = valB & {{15{offset[16]}}, offset[16:0}};
+
+// ORI
+Result = valB | {{15{offset[16]}}, offset[16:0}};
+
+// MOVI
+Result = {{15{offset[16]}}, offset[16:0}};
+
+// ADD
+Result = valA + valB;
+
+// SUB
+Result = valA - valB;
+
+// NEG
+Result = -valB;
+
+// NOT
+Result = ~valB;
+
+//AND
+Result = valA & valB;
+
+// OR
+Result = valA | valB;
+
+// XOR
+Result = valA ^ valB;
+
+// LSR (Logical Shift Right)
+Result = valA >> valB[4:0];
+
+// ASR (Arithmetic Shift Right)
+Result = valA >>> valB[4:0];
+
+// SHL (Shift Left)
+Result = valA << valB[4:0];
+
+// ROR (Rotate Right)
+Result = (valA >> valB[4:0]) | (valA << (32 - valB[4:0]));
+
+// LD
+Result = ALUdo ? (valB + {{15{offset[16]}}, offset[16:0}}) : {{15{offset[16]}}, offset[16:0}};
+
+// LDR
+Result = valB + {{15{offset[16]}}, offset[16:0}};
+
+// ST
+Result = ALUdo ? (valB + {{15{offset[16]}}, offset[16:0}}) : {{15{offset[16]}}, offset[16:0}};
+
+// STR
+Result = valB + {{15{offset[16]}}, offset[16:0}};
+
+endcase
+end
+
+endmodule
 
 
 
