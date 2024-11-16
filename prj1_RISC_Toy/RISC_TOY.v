@@ -45,53 +45,59 @@ assign A= EX_ALUsigA? EX_PC:EX_data0;
 assign B= EX_ALUsigB? EX_shamt:EX_data1;
 assign Imm=EX_ALUImm? EX_22:EX_17;
 
-
-// ALU	
 module ALU (
-input signed [31:0]A,
-input signed [31:0]B,
-input signed [31:0]Imm,
-input  [4:0]ALUop, //ALU operate determine
-input ALUdo,//ALU execution sign
-output reg signed [31:0]Result,
+    input signed [31:0] valA,   // 레지스터 A 값
+    input signed [31:0] valB,   // 레지스터 B 값
+    input signed [31:0] offset, // Immediate 값
+    input [4:0] ALUop,          // ALU 연산 코드
+    input ALUdo,                // ALU 실행 제어 신호
+    output reg signed [31:0] Result // 연산 결과
 );
-parameter
-ADDI=5'b00000, ANDI=5'b00001,ORI=5'b00010,MOVI=5'b00011, ADD=5'b00100,
-SUB=5'b00101, NEG=5'b00110, NOT=5'b00111, AND=5'b01000, OR=5'b01001, XOR=5'b01010,
-LSR=5'b01011, ASR=5'b01100, SHL=5'b01101, ROR=5'b01110, BR=5'b01111, BRL=5'b10000,
-J=5'b10001, JL=5'b10010, LD=5'b10011, LDR=5'b10100, ST=5'b10101, STR=5'b10110;
+    parameter
+        ADDI = 5'b00000, ANDI = 5'b00001, ORI = 5'b00010, MOVI = 5'b00011, ADD = 5'b00100,
+        SUB = 5'b00101, NEG = 5'b00110, NOT = 5'b00111, AND = 5'b01000, OR = 5'b01001,
+        XOR = 5'b01010, LSR = 5'b01011, ASR = 5'b01100, SHL = 5'b01101, ROR = 5'b01110,
+        LD = 5'b10011, LDR = 5'b10100, ST = 5'b10101, STR = 5'b10110;
 
-always@(posedge CLK)
-case(ALUop)
-ADDI:RESULT=A+Imm;
-ANDI:RESULT=A&Imm;
-ORI:RESULT=A|Imm;
-MOVI:RESULT=Imm;
-ADD:RESULT=A+B;	
-SUB:RESULT=A-B;
-NEG:RESULT=-B;
-NOT:RESULT=~B;
-AND:RESULT=A%B;
-OR:RESULT=A|B;
-XOR:RESULT=A^B;
-LSR:RESULT=A>>B[4:0];
-ASR:RESULT=A>>>B[4:0];
-SHL:RESULT=A<<B[4:0];
-ROR:RESULT=
-BR:RESULT=
-BRL:RESULT=
-J:RESULT=
-JL:RESULT=
-LD:RESULT=ALUdo? (A+Imm):Imm;
-LDR:RESULT=A+Imm;
-ST:RESULT=ALUdo?(A+Imm):Imm;
-STR:RESULT=A+Imm;
+    always @(*) begin
+        case (ALUop)
+            // Immediate 연산
+            ADDI: Result = valB + {{15{offset[16]}}, offset[16:0}};
+            ANDI: Result = valB & {{15{offset[16]}}, offset[16:0}};
+            ORI:  Result = valB | {{15{offset[16]}}, offset[16:0}};
+            MOVI: Result = {{15{offset[16]}}, offset[16:0}};
 
+            // Register 간 연산
+            ADD:  Result = valA + valB;
+            SUB:  Result = valA - valB;
+            NEG:  Result = -valB;
+            NOT:  Result = ~valB;
+            AND:  Result = valA & valB;
+            OR:   Result = valA | valB;
+            XOR:  Result = valA ^ valB;
 
-endcase
-end
+            // Shift 연산
+            LSR:  Result = valA >> valB[4:0];
+            ASR:  Result = valA >>> valB[4:0];
+            SHL:  Result = valA << valB[4:0];
+            ROR:  Result = (valA >> valB[4:0]) | (valA << (32 - valB[4:0]));
 
+            // Load/Store 연산
+            LD:   Result = ALUdo ? (valB + {{15{offset[16]}}, offset[16:0}}) : {{15{offset[16]}}, offset[16:0}};
+            LDR:  Result = valB + {{15{offset[16]}}, offset[16:0}};
+            ST:   Result = ALUdo ? (valB + {{15{offset[16]}}, offset[16:0}}) : {{15{offset[16]}}, offset[16:0}};
+            STR:  Result = valB + {{15{offset[16]}}, offset[16:0}};
+
+            // Default case
+            default: Result = 32'b0;
+        endcase
+    end
 endmodule
+
+
+
+
+
 
     // REGISTER FILE FOR GENRAL PURPOSE REGISTERS
     REGFILE    #(.AW(5), .ENTRY(32))    RegFile (
