@@ -37,7 +37,7 @@ reg [31:0]EX_data0;
 reg [31:0]EX_data1;
 
 
-//MUX
+//MUX////
 
 wire [31:0]A,B; wire signed [31:0]Imm; //Immediate Signed Extension
 
