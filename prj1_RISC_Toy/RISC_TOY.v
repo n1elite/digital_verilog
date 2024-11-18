@@ -40,7 +40,7 @@ module RISC_TOY (
 	reg [31:0] valB;
 	reg [31:0] offset; // immeadiate
 	reg [4:0] dest;  // destination
-	reg [31:0] PC;  // Program Counter
+	reg [31:0] PC = 0;  // Program Counter
     	reg [31:0] next_PC;
 	
 	wire ADDI = (opcode == 5'b00000);
@@ -97,56 +97,65 @@ module RISC_TOY (
 			dest <= 0;
 			PC <= 0;
 		end else begin 
-		if(ADDI || ANDI || ORI || LD || ST) begin //MOVI 주의
-			read_address0 <= instruction[26:22];
-			read_address1 <= instruction[21:17];
-			valA <= read_data1; valB <= read_data0; 
-			offset <= {15'b0, instruction[16:0]}; dest <= instruction[26:22];
-		end else if(MOVI) begin 
-			read_address0 <= INSTR[21:17];
-			read_address1 <= INSTR[16:12];
-			valA <= read_data0; valB <= read_data1; 
-			offset <= {15'b0, instruction[16:0]}; dest <= instruction[26:22];
-		end else if(ADD || SUB || AND || OR || XOR) begin 
-			//NEG, NOT 주의
-			read_address0 <= INSTR[21:17];
-			read_address1 <= INSTR[16:12];
-			valA <= read_data0; valB <= read_data1; 
-			offset <= {15'b0, instruction[26:22]}; dest <= instruction[26:22];
-		end else if(NEG || NOT) begin 
-			//NEG, NOT 주의
-			read_address0 <= INSTR[26:22];
-			read_address1 <= INSTR[16:12];
-			valA <= read_data1; valB <= read_data0; 
-			offset <= {15'b0, instruction[26:22]}; dest <= instruction[26:22];
-		end else if(LSR || ASR || SHL || ROR) begin 
-			read_address0 <= instruction[21:17];
-			if (INSTR[5] == 0)
-				valB <= instruction[4:0];
-			else begin
-				read_address1 <= instruction[16:12];
-				valB <= read_data1;
-			end
-			valA <= read_data0;  
-			offset <= instruction[26:22]; dest <= instruction[26:22];
+			if(ADDI || ANDI || ORI || LD || ST) begin //MOVI 주의
+				read_address0 <= instruction[26:22]; //ra
+				read_address1 <= instruction[21:17]; //rb
+				valA <= read_data1;//R[ra]
+				valB <= read_data0;//R[rb] 
+				offset <= {15'b0, instruction[16:0]}; //상수
+				dest <= instruction[26:22]; //ra
+			end else if(MOVI) begin 
+				read_address0 <= INSTR[26:22]; //ra 
+				valB <= read_data1; //R[ra]
+				offset <= {15'b0, instruction[16:0]}; //imm
+				dest <= instruction[26:22]; //ra
+			end else if(ADD || SUB || AND || OR || XOR) begin 
+				read_address0 <= INSTR[21:17]; //rb
+				read_address1 <= INSTR[16:12]; //rc
+				valA <= read_data0; //R[rb]
+				valB <= read_data1; //R[rc]
+				offset <= {15'b0, instruction[26:22]}; //ra
+				dest <= instruction[26:22]; //ra
+			end else if(NEG || NOT) begin 
+				read_address0 <= INSTR[26:22]; //ra
+				read_address1 <= INSTR[16:12]; //rc
+				valA <= read_data1; //R[rc] 
+				valB <= read_data0; //R[ra]
+				offset <= {15'b0, instruction[26:22]}; //ra 
+				dest <= instruction[26:22]; //ra
+			end else if(LSR || ASR || SHL || ROR) begin 
+				read_address0 <= instruction[21:17]; //rb
+					if (INSTR[5] == 0)
+						valB <= instruction[4:0]; //shamt
+					else begin
+						read_address1 <= instruction[16:12]; //rc
+						valB <= read_data1; //R[rc]
+					end
+				valA <= read_data0; //R[rb]  
+				offset <= instruction[26:22]; //ra
+				dest <= instruction[26:22]; //ra
 		end else if(BR) begin 
 			read_address0 <= instruction[21:17]; //rb
 			read_address1 <= instruction[16:12]; //rc
-			valA <= read_data0; valB <= read_data1; 
-			offset <= INSTR[2:0]; dest <= INSTR[26:22];
+			valA <= read_data0; //R[rb]
+			valB <= read_data1; //R[rc]
+			offset <= instruction[2:0]; //cond
 		end else if(BRL) begin 
 			read_address0 <= instruction[21:17]; //rb
 			read_address1 <= instruction[16:12]; //rc
-			valA <= read_data0; valB <= read_data1; 
-			offset <= INSTR[2:0]; 
+			valA <= read_data0; //R[rb]
+			valB <= read_data1; //R[rc]
+			offset <= instruction[2:0]; //cond 
+			dest <= instruction[26:22];
 		end else if(JL || LDR || STR) begin 
-			read_address0 <= instruction[26:22];
+			read_address0 <= instruction[26:22]; //ra
 			valA <= PC // 현재 PC
-			valB <= read_data0; 
-			offset <= instruction[21:0]; dest <= instruction[26:22];
+			valB <= read_data0; //R[ra]
+			offset <= instruction[21:0]; //imm
+			dest <= instruction[26:22]; //ra
 		end else if(J) begin 
-			valA <= pc // 현재 PC
-			offset <= instruction[21:0]; 
+			valA <= PC // 현재 PC
+			offset <= instruction[21:0]; //imm
 		end
 	end
 
