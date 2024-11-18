@@ -37,8 +37,11 @@ module RISC_TOY (
 	reg [4:0] opcode;
 	reg [31:0] valA;
 	reg [31:0] valB;
-	reg [31:0] offset;
-	reg [4:0] dest;
+	reg [31:0] offset; // immeadiate
+	reg [4:0] dest;  // destination
+	reg [31:0] PC;  // Program Counter
+    	reg [31:0] next_PC;
+	
 	wire ADDI = (opcode == 5'b00000);
 	wire ANDI = (opcode == 5'b00001);
 	wire ORI = (opcode == 5'b00010);
@@ -64,6 +67,9 @@ module RISC_TOY (
 	wire STR = (opcode == 5'b10110);
 	
 	assign opcode = INSTR[31:27];
+	assign IADDR = PC[31:2]; 
+    	assign IREQ = 1'b1;  //enable request
+	
 	//////////////
 	//Decode stage
 	//////////////
@@ -75,7 +81,10 @@ module RISC_TOY (
 			valB <= 0;
 			offset <= 0;
 			dest <= 0;
-		end else if(ADDI || ANDI || ORI || LD || ST || MOVI) begin //MOVI 주의
+			PC <= 0;
+		end else 
+			PC <= next_PC;
+		if(ADDI || ANDI || ORI || LD || ST || MOVI) begin //MOVI 주의
 			read_address0 <= INSTR[26:22];
 			read_address1 <= INSTR[21:17];
 			valA <= read_data1; valB <= read_data0; 
@@ -107,7 +116,27 @@ module RISC_TOY (
 			//valA <= read_data0; valB <= read_data1; 
 			offset <= INSTR[21:0]; //dest <= INSTR[21:0];
 		end
+		end
 	end
+
+    ///////////////////////
+    // Program Counter 
+    ///////////////////////
+    	always @(*) begin
+        	if (!RSTN) begin
+            		next_PC = 0;
+        	end else if (J || JL) begin
+            		next_PC = PC + {10'b0, offset}; // Jump with offset
+        	end else if (BR || BRL) begin
+			if (valA == valB) begin  // ALU에서 비교한 리턴값 보내주면 조건 대체
+                		next_PC = PC + {10'b0, offset}; // Branch if condition is met
+            		end else begin
+                		next_PC = PC + 4; // Increment to next instruction
+            	end
+        	end else begin
+            		next_PC = PC + 4; // Default: increment by 4 (next instruction)
+        	end
+    	end
 
 
 endmodule
