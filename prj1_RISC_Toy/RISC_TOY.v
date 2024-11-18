@@ -35,7 +35,7 @@ module RISC_TOY (
 	  .DOUT1  (read_data1)
   );
 	reg [31:0] instruction;
-	reg [4:0] opcode;
+	reg [4:0] opcode = instruction[31:27];
 	reg [31:0] valA;
 	reg [31:0] valB;
 	reg [31:0] offset; // immeadiate
@@ -102,12 +102,11 @@ module RISC_TOY (
 			read_address1 <= instruction[21:17];
 			valA <= read_data1; valB <= read_data0; 
 			offset <= {15'b0, instruction[16:0]}; dest <= instruction[26:22];
-		end else if(ADD || SUB || AND || OR || XOR || NEG || NOT) begin 
-			//NEG, NOT 주의
+		end else if(MOVI) begin 
 			read_address0 <= INSTR[21:17];
 			read_address1 <= INSTR[16:12];
 			valA <= read_data0; valB <= read_data1; 
-			offset <= {15'b0, instruction[26:22]}; dest <= instruction[26:22];
+			offset <= {15'b0, instruction[16:0]}; dest <= instruction[26:22];
 		end else if(LSR || ASR || SHL || ROR) begin 
 			read_address0 <= instruction[21:17];
 			if (INSTR[5] == 0)
