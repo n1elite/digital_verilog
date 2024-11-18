@@ -107,9 +107,9 @@ module ALU (
 
             // Load/Store 연산
             LD:   Result = ALUdo ? (valA + {{15{offset[16]}}, offset[16:0}}) : {{15{offset[16]}}, offset[16:0}};
-            //수정필요.주소계산방식이 고정 LDR:  Result = valB+ {{15{offset[16]}}, offset[16:0}};
+        // LDR:  Result = valA+ {{20{offset[21]}}, offset[21:0}};
             ST:   Result = ALUdo ? (valA + {{15{offset[16]}}, offset[16:0}}) : {{15{offset[16]}}, offset[16:0}};
-            //수정필요 얘도 고정,ALUdo 필요 없음STR:  Result = valB + {{15{offset[16]}}, offset[16:0}};
+        //수정필요,valA=pc 값으로 설정 STR:  Result = valA + {{20{offset[21]}}, offset[21:0}};
 
             // Default case
             default: Result = 32'b0;
