@@ -18,7 +18,7 @@ module RISC_TOY (
 	wire [31:0] read_data0, read_data1;
 	reg WEN;
 	reg [4:0]write_address;
-	wire [31:0] write_data
+	wire [31:0] write_data;
 
   ////////////////////
   // 레지스터 파일 모듈 인스턴스화
@@ -34,7 +34,7 @@ module RISC_TOY (
 	  .DOUT0  (read_data0),
 	  .DOUT1  (read_data1)
   );
-	reg [4:0]opcode <= INSTR[31:27];
+	reg [4:0] opcode;
 	reg [31:0] valA;
 	reg [31:0] valB;
 	reg [31:0] offset;
@@ -62,7 +62,8 @@ module RISC_TOY (
 	wire LDR = (opcode == 5'b10100);
 	wire ST = (opcode == 5'b10101);
 	wire STR = (opcode == 5'b10110);
-
+	
+	assign opcode = INSTR[31:27];
 	//////////////
 	//Decode stage
 	//////////////
@@ -70,7 +71,6 @@ module RISC_TOY (
 		if(!RSTN) begin
 			read_address0 <= 0;
 			read_address1 <= 0;
-			INSTR <= 0;
 			valA <= 0;
 			valB <= 0;
 			offset <= 0;
@@ -106,13 +106,9 @@ module RISC_TOY (
 			read_address1 <= INSTR[16:12];
 			//valA <= read_data0; valB <= read_data1; 
 			offset <= INSTR[21:0]; //dest <= INSTR[21:0];
+		end
 	end
 
 
-	
-	
-	
- 
 endmodule
 `default_nettype wire
-
