@@ -97,7 +97,7 @@ module RISC_TOY (
 			dest <= 0;
 			PC <= 0;
 		end else begin 
-		if(ADDI || ANDI || ORI || LD || ST || MOVI) begin //MOVI 주의
+		if(ADDI || ANDI || ORI || LD || ST) begin //MOVI 주의
 			read_address0 <= instruction[26:22];
 			read_address1 <= instruction[21:17];
 			valA <= read_data1; valB <= read_data0; 
@@ -107,6 +107,18 @@ module RISC_TOY (
 			read_address1 <= INSTR[16:12];
 			valA <= read_data0; valB <= read_data1; 
 			offset <= {15'b0, instruction[16:0]}; dest <= instruction[26:22];
+		end else if(ADD || SUB || AND || OR || XOR) begin 
+			//NEG, NOT 주의
+			read_address0 <= INSTR[21:17];
+			read_address1 <= INSTR[16:12];
+			valA <= read_data0; valB <= read_data1; 
+			offset <= {15'b0, instruction[26:22]}; dest <= instruction[26:22];
+		end else if(NEG || NOT) begin 
+			//NEG, NOT 주의
+			read_address0 <= INSTR[26:22];
+			read_address1 <= INSTR[16:12];
+			valA <= read_data1; valB <= read_data0; 
+			offset <= {15'b0, instruction[26:22]}; dest <= instruction[26:22];
 		end else if(LSR || ASR || SHL || ROR) begin 
 			read_address0 <= instruction[21:17];
 			if (INSTR[5] == 0)
@@ -122,12 +134,12 @@ module RISC_TOY (
 			read_address1 <= instruction[16:12];
 			valA <= read_data0; valB <= read_data1; 
 			//offset <= INSTR[26:22]; dest <= INSTR[26:22];
-		end else if(J || JL || LDR || STR) begin 
-			read_address0 <= instruction[21:17];
-			read_address1 <= instruction[16:12];
-			//valA <= read_data0; valB <= read_data1; 
-			offset <= instruction[21:0]; //dest <= instruction[21:0];
-		end
+		end else if(JL || LDR || STR) begin 
+			read_address0 <= instruction[26:22];
+			valB <= read_data0; 
+			offset <= instruction[21:0]; 
+		end else if(J) begin 
+			offset <= instruction[21:0]; 
 		end
 	end
 
