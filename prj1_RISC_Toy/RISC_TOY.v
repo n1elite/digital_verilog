@@ -145,6 +145,7 @@ module RISC_TOY (
 			valB <= read_data0; 
 			offset <= instruction[21:0]; dest <= instruction[26:22];
 		end else if(J) begin 
+			valA <= pc // 현재 PC
 			offset <= instruction[21:0]; 
 		end
 	end
