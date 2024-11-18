@@ -29,78 +29,44 @@ module RISC_TOY (
     // WRITE YOUR CODE
 
 
-    //*************************************************************************************************
-    //추가변수 여기에 할당해주세요~~~!
-    //*************************************************************************************************
 
-
-    /////////////////IF///////////////// (초기값 설정 레지) 없어도 된다고 생각하면 제거 하셔도 됩니다
-    reg [4:0] IF_ra, IF_rb, IF_rc, IF_op;
+	
+    /////////////////IF/////////////////
     reg [31:0] IF_instr;
     reg [29:0] IF_iaddr;
-    
-    
+    reg [4:0] IF_op;
+
     /////////////////IF_ID/////////////////
-    reg [4:0] FI_ra, FI_rb, FI_rc, FI_op                        // rega add _ regb add _ regc add _ opcode
+    reg [4:0] FI_read_address0, FI_read_address1, FI_dest;      
+    reg [4:0] FI_op; 
     reg [31:0] FI_instr;                                        // 명령어
     reg [29:0] FI_iaddr;                                        // 명령어 add
-    wire [31:0] FI_rv1, FI_rv2;
-
-
-    //reg FI_wer;                                                  // 레지스터 저장 정보가 맨마지막에 여기로 수렴되서 나중에 스톨 생각하면 여기에 enable신호가 올 수 도 있겠다고 생각해서 reg 추가합니다 
-
-    /////////////////DECODER/////////////////
-	wire ADDI = (opcode == 5'b00000);
-	wire ANDI = (opcode == 5'b00001);
-	wire ORI = (opcode == 5'b00010);
-	wire MOVI = (opcode == 5'b00011);
-	wire ADD = (opcode == 5'b00100);
-	wire SUB = (opcode == 5'b00101);
-	wire NEG = (opcode == 5'b00110);
-	wire NOT = (opcode == 5'b00111);
-	wire AND = (opcode == 5'b01000);
-	wire OR = (opcode == 5'b01001);
-	wire XOR = (opcode == 5'b01010);
-	wire LSR = (opcode == 5'b01011);
-	wire ASR = (opcode == 5'b01100);
-	wire SHL = (opcode == 5'b01101);
-	wire ROR = (opcode == 5'b01110);
-	wire BR = (opcode == 5'b01111);
-	wire BRL = (opcode == 5'b10000);
-	wire J = (opcode == 5'b10001);
-	wire JL = (opcode == 5'b10010);
-	wire LD = (opcode == 5'b10011);
-	wire LDR = (opcode == 5'b10100);
-	wire ST = (opcode == 5'b10101);
-	wire STR = (opcode == 5'b10110);
-
-
+    reg [31:0] FI_imm;
+    reg [31:0] FI_valA, FI_valB;
 
     /////////////////ID_EX/////////////////
-    reg [4:0] DE_ra, DE_rb, DE_rc, DE_op;                       // rega add _ regb add _ regc add _ opcode
-    reg [31:0] DE_rv1, DE_rv2, DE_imm;                          // valA _ valB _ offset 
+    reg [4:0] DE_read_address0, DE_read_address1 DE_dest;        // rega add _ regb add _ regc add _ opcode
+    reg [4:0] DE_op; 
+    reg [31:0] DE_valA, DE_valB, DE_imm;                          // FI_valA _ FI_valB _ FI_imm 
     reg [31:0] DE_instr;                                        // 명령어
 	reg [29:0] DE_iaddr;                                        // 명령어 add
+
+    
     reg DE_we, DE_wer;                                          // DREQ가 될 녀석, IREQ가 될 녀석   (write enalbe / write enable reg)
     
 
     /////////////////EX_MEM/////////////////
 
     reg [4:0] XM_op, XM_ra;                                     // opcode 5bit _ dest reg add
-    reg [31:0] XM_aluout, XM_rv1, XM_rv2, XM_instr;             // alu result _ valA _ valB _ 명령어
-    reg [29:0] XM_iaddr;                                        // instruction add (PC) => DADDR
+    reg [31:0] XM_aluout, XM_rv1, XM_rv2, XM_instr;             // alu result _ FI_valA _ FI_valB _ 명령어
+    reg [29:0] XM_iaddr;                                        // IF_instr add (PC) => DADDR
 
-    reg XM_we, XM_wer;  // 계산 결과가 여기서 나올꺼라 여기서 설정해놔야 함 reg write는 굳이 mem 안가도 될꺼 같고...
-
-    // in  XM_iaddr, XM_rv1, XM_rv2, XM_ra
-    // out XM_aluout, XM_rv2, XM_instr*
-
-
+    reg XM_we, XM_wer;
 
     /////////////////MEM_WB/////////////////
 
     reg [4:0] MW_op, MW_ra;                                     // opcode 5bit _ dest reg add
-    reg [31:0] MW_aluout, MW_rv1, MW_rv2, MW_instr, WB_instr;   // alu result _ valA _ valB _ 어떤 계산 _ 어떤 계산
+    reg [31:0] MW_aluout, MW_rv1, MW_rv2, MW_instr, WB_instr;   // alu result _ FI_valA _ FI_valB _ 어떤 계산 _ 어떤 계산
     reg [29:0] MW_iaddr;                                        // P
     reg MW_wer, MW_we;  // 계산 결과 이어받음 이게 mem에 연결되서 wer에서 enable되면 reg에 저장하고 we에서 enable되면 mem에 저장
 
@@ -108,13 +74,18 @@ module RISC_TOY (
 
 
 
+    reg [31:0] PC;  // Program Counter
+    reg [31:0] next_PC;
 
-    //clock code**********************
-
-//
-
-
-
+    always @(posedge CLK or negedge RSTN) begin
+       	if (!RSTN) begin
+           		PC <= 0; // Reset Program Counter
+		IF_instr <= 0;
+       	end else begin
+           		PC <= next_PC; // Update Program Counter
+		IF_instr <= INSTR;
+       	end
+    end
 
 
 
@@ -123,211 +94,174 @@ module RISC_TOY (
     REGFILE    #(.AW(5), .ENTRY(32))    RegFile (
                     .CLK    (CLK),
                     .RSTN   (RSTN),
-                    .WEN    (XM_wer),
-                    .WA     (regwriteaddr),
-                    .DI     (regwritedata),
-                    .RA0    (regreadaddr0),
-                    .RA1    (regreadaddr1),
+                    .WEN    (),
+                    .WA     (),
+                    .DI     (),
+                    .RA0    (),
+                    .RA1    (),
                     .DOUT0  (),
                     .DOUT1  ()
     );
 
-    //regwriteaddr와 regwritedata 구현
-    wire [31:0] regwritedata;
-    wire [4:0] regwriteaddr;
 
-    assign regwritedata = ((XM_instr[31:27] == 5'b10000) | (XM_instr[31:27] == 5'b10010)) ? (DE_iaddr + 4) : 
-    ((XM_instr[31:27] == 5'd19) | (XM_instr[31:27] == 5'd20) ? DRDATA : XM_aluout);
 
-    assign regwriteaddr = ((XM_instr[31:27] == 5'b10000) | (XM_instr[31:27] == 5'b10010)) ? XM_instr[26:22] : 
-    ((XM_instr[31:27] == 5'd19) | (XM_instr[31:27] == 5'd20) ? XM_ra: XM_ra);
+
 
     // WRITE YOUR CODE
 
-
-
-    /////////////////DECODER/////////////////
-	// always @(posedge CLK or negedge RSTN) begin
-	// 	if(!RSTN) begin
-	// 		regreadaddr0 <= 0;
-	// 		regreadaddr1 <= 0;
-	// 		INSTR <= 0;
-	// 		valA <= 0;
-	// 		valB <= 0;
-	// 		offset <= 0;
-	// 		dest <= 0;
-	// 	end else if(ADDI || ANDI || ORI || LD || ST || MOVI) begin //MOVI 주의
-	// 		regreadaddr0 <= INSTR[26:22];
-	// 		regreadaddr1 <= INSTR[21:17];
-	// 		valA <= read_data1; valB <= read_data0; 
-	// 		offset <= {15'b0, INSTR[16:0]}; dest <= INSTR[26:22];
-	// 	end else if(ADD || SUB || AND || OR || XOR || NEG || NOT) begin 
-	// 		//NEG, NOT 주의
-	// 		regreadaddr0 <= INSTR[21:17];
-	// 		regreadaddr1 <= INSTR[16:12];
-	// 		valA <= read_data0; valB <= read_data1; 
-	// 		offset <= {15'b0, INSTR[26:22]}; dest <= INSTR[26:22];
-	// 	end else if(LSR || ASR || SHL || ROR) begin 
-	// 		regreadaddr0 <= INSTR[21:17];
-	// 		if (INSTR[5] == 0)
-	// 			valB <= INSTR[4:0];
-	// 		else begin
-	// 			regreadaddr1 <= INSTR[16:12];
-	// 			valB <= read_data1;
-	// 		end
-	// 		valA <= read_data0;  
-	// 		offset <= INSTR[26:22]; dest <= INSTR[26:22];
-	// 	end else if(BR || BRL) begin 
-	// 		regreadaddr0 <= INSTR[21:17];
-	// 		regreadaddr1 <= INSTR[16:12];
-	// 		valA <= read_data0; valB <= read_data1; 
-	// 		//offset <= INSTR[26:22]; dest <= INSTR[26:22];
-	// 	end else if(J || JL || LDR || STR) begin 
-	// 		regreadaddr0 <= INSTR[21:17];
-	// 		regreadaddr1 <= INSTR[16:12];
-	// 		//valA <= read_data0; valB <= read_data1; 
-	// 		offset <= INSTR[21:0]; dest <= INSTR[21:0];
-    //     end
-	// end
-
-module ALU (
-    input signed [31:0] valA,   // 레지스터 A 값
-    input signed [31:0] valB,   // 레지스터 B 값
-    input signed [31:0] offset, // Immediate 값
-    input [4:0] ALUop,          // ALU 연산 코드
-    input ALUdo,                // ALU 실행 제어 신호
-    output reg signed [31:0] Result // 연산 결과
-);
-    parameter
-        ADDI = 5'b00000, ANDI = 5'b00001, ORI = 5'b00010, MOVI = 5'b00011, ADD = 5'b00100,
-        SUB = 5'b00101, NEG = 5'b00110, NOT = 5'b00111, AND = 5'b01000, OR = 5'b01001,
-        XOR = 5'b01010, LSR = 5'b01011, ASR = 5'b01100, SHL = 5'b01101, ROR = 5'b01110,
-        LD = 5'b10011, LDR = 5'b10100, ST = 5'b10101, STR = 5'b10110;
-
-    always @(*) begin
-        case (ALUop)
-            // Immediate 연산
-            ADDI: Result = valA + {{15{offset[16]}}, offset[16:0}};
-            ANDI: Result = valA & {{15{offset[16]}}, offset[16:0}};
-            ORI:  Result = valA | {{15{offset[16]}}, offset[16:0}};
-            MOVI: Result = {{15{offset[16]}}, offset[16:0}};
-
-            // Register 간 연산
-            ADD:  Result = valA + valB;
-            SUB:  Result = valA - valB;
-            NEG:  Result = -valB;
-            NOT:  Result = ~valB;
-            AND:  Result = valA & valB;
-            OR:   Result = valA | valB;
-            XOR:  Result = valA ^ valB;
-
-            // Shift 연산
-            LSR:  Result = valA >> valB[4:0];
-            ASR:  Result = valA >>> valB[4:0];
-            SHL:  Result = valA << valB[4:0];
-            ROR:  Result = (valA >> valB[4:0]) | (valA << (32 - valB[4:0]));
-
-            // Load/Store 연산
-	    LD:   Result = ALUdo ? (valA + {{15{offset[16]}}, offset[16:0]}) : {{15{offset[16]}}, offset[16:0]};
-	  //수정필요??  LDR:  Result = valB + {{20{offset[21]}}, offset[21:0]};
-	    ST:   Result = ALUdo ? (valA + {{15{offset[16]}}, offset[16:0}}) : {{15{offset[16]}}, offset[16:0]};
-          //수정필요??  STR:  Result = valB + {{20{offset[21]}}, offset[21:0]};
-
-            // Default case
-            default: Result = 32'b0;
-        endcase
+    /////////////////IF/////////////////
+    always @(posedge CLK or negedge RSTN) begin
+        if(~RSTN) begin
+            IF_op <= 0;
+            IF_instr <= 0;
+        end
+        else begin
+            IF_op <= INSTR[31:27];
+            IF_instr <= INSTR;
+        end
+        
     end
-endmodule
-
-
-
-
 
     /////////////////IF_ID/////////////////
 
+	wire ADDI = (IF_op == 5'b00000);
+	wire ANDI = (IF_op == 5'b00001);
+	wire ORI = (IF_op == 5'b00010);
+	wire MOVI = (IF_op == 5'b00011);
+	wire ADD = (IF_op == 5'b00100);
+	wire SUB = (IF_op == 5'b00101);
+	wire NEG = (IF_op == 5'b00110);
+	wire NOT = (IF_op == 5'b00111);
+	wire AND = (IF_op == 5'b01000);
+	wire OR = (IF_op == 5'b01001);
+	wire XOR = (IF_op == 5'b01010);
+	wire LSR = (IF_op == 5'b01011);
+	wire ASR = (IF_op == 5'b01100);
+	wire SHL = (IF_op == 5'b01101);
+	wire ROR = (IF_op == 5'b01110);
+	wire BR = (IF_op == 5'b01111);
+	wire BRL = (IF_op == 5'b10000);
+	wire J = (IF_op == 5'b10001);
+	wire JL = (IF_op == 5'b10010);
+	wire LD = (IF_op == 5'b10011);
+	wire LDR = (IF_op == 5'b10100);
+	wire ST = (IF_op == 5'b10101);
+	wire STR = (IF_op == 5'b10110);
 
-    //위에 디코더를 통해 IF에서 ID를 이어주는 작업이 필요합니다~
+
+	wire [31:0] read_data0, read_data1;
 
 
-    /////////////////ID_EX/////////////////
     always @(posedge CLK or negedge RSTN) begin
-        if(~RSTN) begin
-            DE_ra <= 0;
-            DE_rb <= 0;
-            DE_rc <= 0;
-            DE_op <= 0;
-            DE_imm <= 0;
-            DE_we <= 0;
-            DE_wer <= 0;
-            DE_rv1 <= 0;
-            DE_rv2 <= 0;
-            DE_instr <= 0;
-            DE_iaddr <= 0;
-        end
+		if(!RSTN) begin
+            FI_op <= 0;
+            FI_instr <= 0;
+            FI_iaddr <= 0;
+			FI_read_address0 <= 0;
+			FI_read_address1 <= 0;
+			FI_valA <= 0;
+			FI_valB <= 0;
+			FI_imm <= 0;
+			FI_dest <= 0;
+			PC <= 0;
+		end else begin 
 
+            FI_op <= IF_op;
+            FI_instr <= IF_instr;
+            FI_iaddr <= IF_iaddr;
 
-//코드 추가
-
+		    if(ADDI || ANDI || ORI || LD || ST) begin //MOVI 주의
+			    FI_read_address0 <= IF_instr[26:22];
+    			FI_read_address1 <= IF_instr[21:17];
+	    		FI_valA <= read_data1; FI_valB <= read_data0; 
+		    	FI_imm <= {15'b0, IF_instr[16:0]}; FI_dest <= IF_instr[26:22];
+		    end else if(MOVI) begin 
+    			FI_read_address0 <= INSTR[21:17];
+	    		FI_read_address1 <= INSTR[16:12];
+		    	FI_valA <= read_data0; FI_valB <= read_data1; 
+		    	FI_imm <= {15'b0, IF_instr[16:0]}; FI_dest <= IF_instr[26:22];
+		    end else if(ADD || SUB || AND || OR || XOR) begin 
+		    	//NEG, NOT 주의
+		    	FI_read_address0 <= INSTR[21:17];
+		    	FI_read_address1 <= INSTR[16:12];
+		    	FI_valA <= read_data0; FI_valB <= read_data1; 
+		    	FI_imm <= {15'b0, IF_instr[26:22]}; FI_dest <= IF_instr[26:22];
+		    end else if(NEG || NOT) begin 
+		    	//NEG, NOT 주의
+		    	FI_read_address0 <= INSTR[26:22];
+		    	FI_read_address1 <= INSTR[16:12];
+		    	FI_valA <= read_data1; FI_valB <= read_data0; 
+		    	FI_imm <= {15'b0, IF_instr[26:22]}; FI_dest <= IF_instr[26:22];
+		    end else if(LSR || ASR || SHL || ROR) begin 
+		    	FI_read_address0 <= IF_instr[21:17];
+		    	if (INSTR[5] == 0)
+		    		FI_valB <= IF_instr[4:0];
+		    	else begin
+		    		FI_read_address1 <= IF_instr[16:12];
+		    		FI_valB <= read_data1;
+		    	end
+		    	FI_valA <= read_data0;  
+		    	FI_imm <= IF_instr[26:22]; FI_dest <= IF_instr[26:22];
+		    end else if(BR) begin 
+		    	FI_read_address0 <= IF_instr[21:17];
+		    	FI_read_address1 <= IF_instr[16:12];
+		    	FI_valA <= read_data0; FI_valB <= read_data1; 
+		    	//FI_imm <= INSTR[26:22]; FI_dest <= INSTR[26:22];
+		    end else if(BRL) begin 
+		    	FI_read_address0 <= IF_instr[21:17];
+		    	FI_read_address1 <= IF_instr[16:12];
+		    	FI_valA <= read_data0; FI_valB <= read_data1; 
+		    	//FI_imm <= INSTR[26:22]; FI_dest <= INSTR[26:22];
+		    end else if(JL || LDR || STR) begin 
+		    	FI_read_address0 <= IF_instr[26:22];
+		    	FI_valB <= read_data0; 
+		    	FI_imm <= IF_instr[21:0]; FI_dest <= IF_instr[26:22];
+		    end else if(J) begin 
+		    	FI_imm <= IF_instr[21:0]; 
+		    end
+	    end
     end
 
 
 
 
-    /////////////////EX_MEM/////////////////
-    always @(posedge CLK or negedge RSTN) begin
-        if(~RSTN) begin
-            XM_op <= 0;
-            XM_we <= 0;
-            XM_wer <= 0;
-            XM_rv1 <= 0;
-            XM_rv2 <= 0;
-            XM_ra <= 0;
-            XM_aluout <= 0;
-            XM_iaddr <= 0;
-            XM_instr <= 0;
-        end
-        else begin
-            XM_op <= DE_op;
-            XM_we <= DE_we;
-            XM_wer <= DE_wer;
-            XM_rv1 <= DE_rv1;
-            XM_rv2 <= DE_rv2;
-            XM_ra <= DE_ra;
-            XM_aluout <= ;                                     //여기 ALU에서 나온 값으로 대체!
-            XM_iaddr <= DE_iaddr;
-            XM_instr <= DE_instr;
-        end 
-    end
 
-    assign DWDATA = DRW ? XM_rv2 : 0;
-    assign DADDR = XM_aluout : // ALU_OUT********
-    assign DRW = ~XM_we;
 
-    /////////////////MEM_WB/////////////////
-    always @(posedge CLK or negedge RSTN) begin
-        if(~RSTN) begin
-            MW_op <= 0;
-            MW_we <= 0;
-            MW_wer <= 0;
-            MW_ra <= 0;
-            MW_rv1 <= 0;
-            MW_rv2 <= 0;
-            MW_aluout <= 0;
-            MW_iaddr <= 0;
-            MW_instr <= 0;
-        end
-        else begin
-            MW_op <= XM_op;
-            MW_we <= XM_we;
-            MW_wer <= XM_wer;
-            MW_ra <= XM_ra;
-            MW_rv1 <= XM_rv1;
-            MW_rv2 <= XM_rv2;
-            MW_aluout <= XM_aluout;
-            MW_iaddr <= XM_iaddr;
-            MW_instr <= XM_instr;
-        end
-    end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/////////////////////////////clock 여기 변수 수정해야 됨
+
+always @(posedge CLK or negedge RSTN) begin
+     	if (!RSTN) begin
+          		next_PC = 0;
+       	end else if (J || JL) begin
+		next_PC = PC + offset; // Jump with offset
+       	end else if (BR || BRL) begin
+		if (valA == valB) begin  // ALU에서 비교한 리턴값 보내주면 조건 대체
+               		next_PC = read_data0; // Branch if condition is met
+           		end else begin
+               		next_PC = PC + 4; // Increment to next instruction
+           	end
+       	end else begin
+           		next_PC = PC + 4; // Default: increment by 4 (next instruction)
+       	end
+   	end
+
 
 
 endmodule
