@@ -154,73 +154,80 @@ module RISC_TOY (
 
     always @(posedge CLK or negedge RSTN) begin
 		if(!RSTN) begin
-            FI_op <= 0;
-            FI_instr <= 0;
-            FI_iaddr <= 0;
 			FI_read_address0 <= 0;
 			FI_read_address1 <= 0;
 			FI_valA <= 0;
 			FI_valB <= 0;
 			FI_imm <= 0;
 			FI_dest <= 0;
+            FI_iaddr <= 0;
+            FI_instr <= 0;
+            FI_op <= 0;
 			PC <= 0;
 		end else begin 
-
-            FI_op <= IF_op;
-            FI_instr <= IF_instr;
             FI_iaddr <= IF_iaddr;
-
-		    if(ADDI || ANDI || ORI || LD || ST) begin //MOVI 주의
-			    FI_read_address0 <= IF_instr[26:22];
-    			FI_read_address1 <= IF_instr[21:17];
-	    		FI_valA <= read_data1; FI_valB <= read_data0; 
-		    	FI_imm <= {15'b0, IF_instr[16:0]}; FI_dest <= IF_instr[26:22];
-		    end else if(MOVI) begin 
-    			FI_read_address0 <= INSTR[21:17];
-	    		FI_read_address1 <= INSTR[16:12];
-		    	FI_valA <= read_data0; FI_valB <= read_data1; 
-		    	FI_imm <= {15'b0, IF_instr[16:0]}; FI_dest <= IF_instr[26:22];
-		    end else if(ADD || SUB || AND || OR || XOR) begin 
-		    	//NEG, NOT 주의
-		    	FI_read_address0 <= INSTR[21:17];
-		    	FI_read_address1 <= INSTR[16:12];
-		    	FI_valA <= read_data0; FI_valB <= read_data1; 
-		    	FI_imm <= {15'b0, IF_instr[26:22]}; FI_dest <= IF_instr[26:22];
-		    end else if(NEG || NOT) begin 
-		    	//NEG, NOT 주의
-		    	FI_read_address0 <= INSTR[26:22];
-		    	FI_read_address1 <= INSTR[16:12];
-		    	FI_valA <= read_data1; FI_valB <= read_data0; 
-		    	FI_imm <= {15'b0, IF_instr[26:22]}; FI_dest <= IF_instr[26:22];
-		    end else if(LSR || ASR || SHL || ROR) begin 
-		    	FI_read_address0 <= IF_instr[21:17];
-		    	if (INSTR[5] == 0)
-		    		FI_valB <= IF_instr[4:0];
-		    	else begin
-		    		FI_read_address1 <= IF_instr[16:12];
-		    		FI_valB <= read_data1;
-		    	end
-		    	FI_valA <= read_data0;  
-		    	FI_imm <= IF_instr[26:22]; FI_dest <= IF_instr[26:22];
-		    end else if(BR) begin 
-		    	FI_read_address0 <= IF_instr[21:17];
-		    	FI_read_address1 <= IF_instr[16:12];
-		    	FI_valA <= read_data0; FI_valB <= read_data1; 
-		    	//FI_imm <= INSTR[26:22]; FI_dest <= INSTR[26:22];
-		    end else if(BRL) begin 
-		    	FI_read_address0 <= IF_instr[21:17];
-		    	FI_read_address1 <= IF_instr[16:12];
-		    	FI_valA <= read_data0; FI_valB <= read_data1; 
-		    	//FI_imm <= INSTR[26:22]; FI_dest <= INSTR[26:22];
-		    end else if(JL || LDR || STR) begin 
-		    	FI_read_address0 <= IF_instr[26:22];
-		    	FI_valB <= read_data0; 
-		    	FI_imm <= IF_instr[21:0]; FI_dest <= IF_instr[26:22];
-		    end else if(J) begin 
-		    	FI_imm <= IF_instr[21:0]; 
-		    end
-	    end
-    end
+            FI_instr <= IF_instr;
+            FI_op <= IF_op;
+			if(ADDI || ANDI || ORI || LD || ST) begin //MOVI 주의
+				FI_read_address0 <= IF_instr[26:22]; //ra
+				FI_read_address1 <= IF_instr[21:17]; //rb
+				FI_valA <= read_data1;//R[ra]
+				FI_valB <= read_data0;//R[rb] 
+				FI_imm <= {15'b0, IF_instr[16:0]}; //상수
+				FI_dest <= IF_instr[26:22]; //ra
+			end else if(MOVI) begin 
+				FI_read_address0 <= IF_instr[26:22]; //ra 
+				FI_valB <= read_data1; //R[ra]
+				FI_imm <= {15'b0, IF_instr[16:0]}; //imm
+				FI_dest <= IF_instr[26:22]; //ra
+			end else if(ADD || SUB || AND || OR || XOR) begin 
+				FI_read_address0 <= IF_instr[21:17]; //rb
+				FI_read_address1 <= IF_instr[16:12]; //rc
+				FI_valA <= read_data0; //R[rb]
+				FI_valB <= read_data1; //R[rc]
+				FI_imm <= {15'b0, IF_instr[26:22]}; //ra
+				FI_dest <= IF_instr[26:22]; //ra
+			end else if(NEG || NOT) begin 
+				FI_read_address0 <= IF_instr[26:22]; //ra
+				FI_read_address1 <= IF_instr[16:12]; //rc
+				FI_valA <= read_data1; //R[rc] 
+				FI_valB <= read_data0; //R[ra]
+				FI_imm <= {15'b0, IF_instr[26:22]}; //ra 
+				FI_dest <= IF_instr[26:22]; //ra
+			end else if(LSR || ASR || SHL || ROR) begin 
+				FI_read_address0 <= IF_instr[21:17]; //rb
+					if (IF_instr[5] == 0)
+						FI_valB <= IF_instr[4:0]; //shamt
+					else begin
+						FI_read_address1 <= IF_instr[16:12]; //rc
+						FI_valB <= read_data1; //R[rc]
+					end
+				FI_valA <= read_data0; //R[rb]  
+				FI_imm <= IF_instr[26:22]; //ra
+				FI_dest <= IF_instr[26:22]; //ra
+			end else if(BR) begin 
+				FI_read_address0 <= IF_instr[21:17]; //rb
+				FI_read_address1 <= IF_instr[16:12]; //rc
+				FI_valA <= read_data0; //R[rb]
+				FI_valB <= read_data1; //R[rc]
+				FI_imm <= IF_instr[2:0]; //cond
+			end else if(BRL) begin 
+				FI_read_address0 <= IF_instr[21:17]; //rb
+				FI_read_address1 <= IF_instr[16:12]; //rc
+				FI_valA <= read_data0; //R[rb]
+				FI_valB <= read_data1; //R[rc]
+				FI_imm <= IF_instr[2:0]; //cond 
+				FI_dest <= IF_instr[26:22];
+			end else if(JL || LDR || STR) begin 
+				FI_valA <= PC; // 현재 PC
+				FI_imm <= IF_instr[21:0]; //imm
+				FI_dest <= IF_instr[26:22]; //ra
+			end else if(J) begin 
+				FI_valA <= PC; // 현재 PC
+				FI_imm <= IF_instr[21:0]; //imm
+			end
+		end
+	end
 
 
 
@@ -246,21 +253,21 @@ module RISC_TOY (
 
 /////////////////////////////clock 여기 변수 수정해야 됨
 
-always @(posedge CLK or negedge RSTN) begin
-     	if (!RSTN) begin
-          		next_PC = 0;
-       	end else if (J || JL) begin
-		next_PC = PC + offset; // Jump with offset
-       	end else if (BR || BRL) begin
-		if (valA == valB) begin  // ALU에서 비교한 리턴값 보내주면 조건 대체
-               		next_PC = read_data0; // Branch if condition is met
-           		end else begin
-               		next_PC = PC + 4; // Increment to next instruction
+    always @(posedge CLK or negedge RSTN) begin
+         	if (!RSTN) begin
+              		next_PC = 0;
+           	end else if (J || JL) begin
+    		next_PC = PC + FI_imm; // Jump with FI_imm
+           	end else if (BR || BRL) begin
+    		if (FI_valA == FI_valB) begin  // ALU에서 비교한 리턴값 보내주면 조건 대체
+            	next_PC = read_data0; // Branch if condition is met
+            end else begin
+           		next_PC = PC + 4; // Increment to next IF_instr
            	end
        	end else begin
-           		next_PC = PC + 4; // Default: increment by 4 (next instruction)
+        	next_PC = PC + 4; // Default: increment by 4 (next IF_instr)
        	end
-   	end
+    end
 
 
 
