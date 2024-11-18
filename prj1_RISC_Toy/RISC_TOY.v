@@ -100,8 +100,51 @@ module ALU (
             NEG:  Result = -valB;
             NOT:  Result = ~valB;
             AND:  Result = valA & valB;
-         능 Result=
-    //.valB(alu_va언 Result=
+            OR:   Result = valA | valB;
+            XOR:  Result = valA ^ valB;
+            // Shift 연산
+            LSR:  Result = valA >> valB[4:0];
+            ASR:  Result = valA >>> valB[4:0];
+            SHL:  Result = valA << valB[4:0];
+            ROR:  Result = (valA >> valB[4:0]) | (valA << (32 - valB[4:0]));
+            // Load/Store 연산
+            LD:   Result = ALUdo ? (valA + {{15{offset[16]}}, offset[16:0}}) : {{15{offset[16]}}, offset[16:0}};
+        // LDR:  Result = valA+ {{20{offset[21]}}, offset[21:0}};
+            ST:   Result = ALUdo ? (valA + {{15{offset[16]}}, offset[16:0}}) : {{15{offset[16]}}, offset[16:0}};
+            //수정필요,valA=pc 값으로 설정 STR:  Result = valA + {{20{offset[21]}}, offset[21:0]};
+         //J,JL,BR,BRL
+        J:Result= valA+ {{20{offset[21]}}, offset[21:0]};
+        JL:Result=valA+{{20{offset[21]}}, offset[21:0]};
+      // 헷갈림  
+                                                                                                         
+                                                                                                        
+BR:
+Result=
+       if(offset == 0) // Never 
+    
+       else if(offset == 1) // Always     
+            PC = valA;
+                                                                                                         
+       else if(offset== 2)  //Zero 
+           if(valB == 0)
+            PC = valA;
+                                                                                                            
+     else if(offset == 3) // Nonzero 
+           if(valB!= 0)
+           PC = valA;
+                                                                                                               
+    else if(offset== 4) // Plus 
+          if(valB >= 0)
+          PC = valA;
+                                                                                                                    
+  else if(offset == 5) // Minus 
+          if(valB < 0)
+         PC = valA;
+        
+BRL:
+//이부분 PC 값 할당만 하면됨. 코드맞는지도 체크 하기  
+     
+Result=
  if(offset == 0) // Never 
     else if(offset == 1) // Always
         PC = valA;
