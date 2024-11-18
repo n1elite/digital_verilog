@@ -34,6 +34,7 @@ module RISC_TOY (
 	  .DOUT0  (read_data0),
 	  .DOUT1  (read_data1)
   );
+	reg [31:0] instruction;
 	reg [4:0] opcode;
 	reg [31:0] valA;
 	reg [31:0] valB;
@@ -69,6 +70,19 @@ module RISC_TOY (
 	assign opcode = INSTR[31:27];
 	assign IADDR = PC[31:2]; 
     	assign IREQ = 1'b1;  //enable request
+
+  	//////////////
+    	// Fetch stage
+    	//////////////
+    	always @(posedge CLK or negedge RSTN) begin
+        	if (!RSTN) begin
+            		PC <= 0; // Reset Program Counter
+			instruction <= 0;
+        	end else begin
+            		PC <= next_PC; // Update Program Counter
+			instruction <= INSTR;
+        	end
+    	end
 	
 	//////////////
 	//Decode stage
@@ -82,39 +96,38 @@ module RISC_TOY (
 			offset <= 0;
 			dest <= 0;
 			PC <= 0;
-		end else 
-			PC <= next_PC;
+		end else begin 
 		if(ADDI || ANDI || ORI || LD || ST || MOVI) begin //MOVI 주의
-			read_address0 <= INSTR[26:22];
-			read_address1 <= INSTR[21:17];
+			read_address0 <= instruction[26:22];
+			read_address1 <= instruction[21:17];
 			valA <= read_data1; valB <= read_data0; 
-			offset <= {15'b0, INSTR[16:0]}; dest <= INSTR[26:22];
+			offset <= {15'b0, instruction[16:0]}; dest <= instruction[26:22];
 		end else if(ADD || SUB || AND || OR || XOR || NEG || NOT) begin 
 			//NEG, NOT 주의
 			read_address0 <= INSTR[21:17];
 			read_address1 <= INSTR[16:12];
 			valA <= read_data0; valB <= read_data1; 
-			offset <= {15'b0, INSTR[26:22]}; dest <= INSTR[26:22];
+			offset <= {15'b0, instruction[26:22]}; dest <= instruction[26:22];
 		end else if(LSR || ASR || SHL || ROR) begin 
-			read_address0 <= INSTR[21:17];
+			read_address0 <= instruction[21:17];
 			if (INSTR[5] == 0)
-				valB <= INSTR[4:0];
+				valB <= instruction[4:0];
 			else begin
-				read_address1 <= INSTR[16:12];
+				read_address1 <= instruction[16:12];
 				valB <= read_data1;
 			end
 			valA <= read_data0;  
-			offset <= INSTR[26:22]; dest <= INSTR[26:22];
+			offset <= instructino[26:22]; dest <= instruction[26:22];
 		end else if(BR || BRL) begin 
-			read_address0 <= INSTR[21:17];
-			read_address1 <= INSTR[16:12];
+			read_address0 <= instruction[21:17];
+			read_address1 <= instruction[16:12];
 			valA <= read_data0; valB <= read_data1; 
 			//offset <= INSTR[26:22]; dest <= INSTR[26:22];
 		end else if(J || JL || LDR || STR) begin 
-			read_address0 <= INSTR[21:17];
-			read_address1 <= INSTR[16:12];
+			read_address0 <= instruction[21:17];
+			read_address1 <= instruction[16:12];
 			//valA <= read_data0; valB <= read_data1; 
-			offset <= INSTR[21:0]; //dest <= INSTR[21:0];
+			offset <= instruction[21:0]; //dest <= instruction[21:0];
 		end
 		end
 	end
