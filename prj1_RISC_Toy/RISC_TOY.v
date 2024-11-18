@@ -207,9 +207,9 @@ module ALU (
     always @(*) begin
         case (ALUop)
             // Immediate 연산
-            ADDI: Result = valB + {{15{offset[16]}}, offset[16:0}};
-            ANDI: Result = valB & {{15{offset[16]}}, offset[16:0}};
-            ORI:  Result = valB | {{15{offset[16]}}, offset[16:0}};
+            ADDI: Result = valA + {{15{offset[16]}}, offset[16:0}};
+            ANDI: Result = valA & {{15{offset[16]}}, offset[16:0}};
+            ORI:  Result = valA | {{15{offset[16]}}, offset[16:0}};
             MOVI: Result = {{15{offset[16]}}, offset[16:0}};
 
             // Register 간 연산
@@ -228,10 +228,10 @@ module ALU (
             ROR:  Result = (valA >> valB[4:0]) | (valA << (32 - valB[4:0]));
 
             // Load/Store 연산
-	    LD:   Result = ALUdo ? (valA + {{15{offset[16]}}, offset[16:0}}) : {{15{offset[16]}}, offset[16:0}};
-	    LDR:  Result = valB + {{20{offset[21]}}, offset[21:0]};
-	    ST:   Result = ALUdo ? (valA + {{15{offset[16]}}, offset[16:0}}) : {{15{offset[16]}}, offset[16:0}};
-	    STR:  Result = valB + {{20{offset[21]}}, offset[21:0}};
+	    LD:   Result = ALUdo ? (valA + {{15{offset[16]}}, offset[16:0]}) : {{15{offset[16]}}, offset[16:0]};
+	  //수정필요??  LDR:  Result = valB + {{20{offset[21]}}, offset[21:0]};
+	    ST:   Result = ALUdo ? (valA + {{15{offset[16]}}, offset[16:0}}) : {{15{offset[16]}}, offset[16:0]};
+          //수정필요??  STR:  Result = valB + {{20{offset[21]}}, offset[21:0]};
 
             // Default case
             default: Result = 32'b0;
