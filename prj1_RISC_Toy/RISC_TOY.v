@@ -228,10 +228,10 @@ module ALU (
             ROR:  Result = (valA >> valB[4:0]) | (valA << (32 - valB[4:0]));
 
             // Load/Store 연산
-            LD:   Result = ALUdo ? (valB + {{15{offset[16]}}, offset[16:0}}) : {{15{offset[16]}}, offset[16:0}};
-            LDR:  Result = valB + {{15{offset[16]}}, offset[16:0}};
-            ST:   Result = ALUdo ? (valB + {{15{offset[16]}}, offset[16:0}}) : {{15{offset[16]}}, offset[16:0}};
-            STR:  Result = valB + {{15{offset[16]}}, offset[16:0}};
+	    LD:   Result = ALUdo ? (valA + {{15{offset[16]}}, offset[16:0}}) : {{15{offset[16]}}, offset[16:0}};
+	    LDR:  Result = valB + {{20{offset[21]}}, offset[21:0]};
+	    ST:   Result = ALUdo ? (valA + {{15{offset[16]}}, offset[16:0}}) : {{15{offset[16]}}, offset[16:0}};
+	    STR:  Result = valB + {{20{offset[21]}}, offset[21:0}};
 
             // Default case
             default: Result = 32'b0;
