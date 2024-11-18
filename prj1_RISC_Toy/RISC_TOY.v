@@ -35,7 +35,7 @@ module RISC_TOY (
 	  .DOUT1  (read_data1)
   );
 	reg [31:0] instruction;
-	reg [4:0] opcode = instruction[31:27];
+	reg [4:0] opcode;
 	reg [31:0] valA;
 	reg [31:0] valB;
 	reg [31:0] offset; // immeadiate
@@ -134,29 +134,29 @@ module RISC_TOY (
 				valA <= read_data0; //R[rb]  
 				offset <= instruction[26:22]; //ra
 				dest <= instruction[26:22]; //ra
-		end else if(BR) begin 
-			read_address0 <= instruction[21:17]; //rb
-			read_address1 <= instruction[16:12]; //rc
-			valA <= read_data0; //R[rb]
-			valB <= read_data1; //R[rc]
-			offset <= instruction[2:0]; //cond
-		end else if(BRL) begin 
-			read_address0 <= instruction[21:17]; //rb
-			read_address1 <= instruction[16:12]; //rc
-			valA <= read_data0; //R[rb]
-			valB <= read_data1; //R[rc]
-			offset <= instruction[2:0]; //cond 
-			dest <= instruction[26:22];
-		end else if(JL || LDR || STR) begin 
-			valA <= PC; // 현재 PC
-			offset <= instruction[21:0]; //imm
-			dest <= instruction[26:22]; //ra
-		end else if(J) begin 
-			valA <= PC; // 현재 PC
-			offset <= instruction[21:0]; //imm
+			end else if(BR) begin 
+				read_address0 <= instruction[21:17]; //rb
+				read_address1 <= instruction[16:12]; //rc
+				valA <= read_data0; //R[rb]
+				valB <= read_data1; //R[rc]
+				offset <= instruction[2:0]; //cond
+			end else if(BRL) begin 
+				read_address0 <= instruction[21:17]; //rb
+				read_address1 <= instruction[16:12]; //rc
+				valA <= read_data0; //R[rb]
+				valB <= read_data1; //R[rc]
+				offset <= instruction[2:0]; //cond 
+				dest <= instruction[26:22];
+			end else if(JL || LDR || STR) begin 
+				valA <= PC; // 현재 PC
+				offset <= instruction[21:0]; //imm
+				dest <= instruction[26:22]; //ra
+			end else if(J) begin 
+				valA <= PC; // 현재 PC
+				offset <= instruction[21:0]; //imm
+			end
 		end
-	end
-	end
+		end
 
     ///////////////////////
     // Program Counter 
