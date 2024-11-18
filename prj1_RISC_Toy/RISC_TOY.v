@@ -161,7 +161,7 @@ module RISC_TOY (
     ///////////////////////
     // Program Counter 
     ///////////////////////
-	always @(posedge clk or negedge RSTN) begin
+	always @(posedge CLK or negedge RSTN) begin
         	if (!RSTN) begin
             		next_PC = 0;
         	end else if (J || JL) begin
