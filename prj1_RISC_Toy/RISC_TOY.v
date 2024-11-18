@@ -148,7 +148,6 @@ module RISC_TOY (
 			offset <= instruction[2:0]; //cond 
 			dest <= instruction[26:22];
 		end else if(JL || LDR || STR) begin 
-			read_address0 <= instruction[26:22]; //ra
 			valA <= PC // 현재 PC
 			offset <= instruction[21:0]; //imm
 			dest <= instruction[26:22]; //ra
