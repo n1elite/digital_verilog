@@ -130,15 +130,15 @@ module RISC_TOY (
 			valA <= read_data0;  
 			offset <= instruction[26:22]; dest <= instruction[26:22];
 		end else if(BR) begin 
-			read_address0 <= instruction[21:17];
-			read_address1 <= instruction[16:12];
+			read_address0 <= instruction[21:17]; //rb
+			read_address1 <= instruction[16:12]; //rc
 			valA <= read_data0; valB <= read_data1; 
-			//offset <= INSTR[26:22]; dest <= INSTR[26:22];
+			offset <= INSTR[2:0]; dest <= INSTR[26:22];
 		end else if(BRL) begin 
-			read_address0 <= instruction[21:17];
-			read_address1 <= instruction[16:12];
+			read_address0 <= instruction[21:17]; //rb
+			read_address1 <= instruction[16:12]; //rc
 			valA <= read_data0; valB <= read_data1; 
-			//offset <= INSTR[26:22]; dest <= INSTR[26:22];
+			offset <= INSTR[2:0]; 
 		end else if(JL || LDR || STR) begin 
 			read_address0 <= instruction[26:22];
 			valA <= PC // 현재 PC
@@ -153,14 +153,14 @@ module RISC_TOY (
     ///////////////////////
     // Program Counter 
     ///////////////////////
-    	always @(*) begin
+	always @(posedge clk or negedge RSTN) begin
         	if (!RSTN) begin
             		next_PC = 0;
         	end else if (J || JL) begin
-            		next_PC = PC + {10'b0, offset}; // Jump with offset
+			next_PC = PC + offset; // Jump with offset
         	end else if (BR || BRL) begin
 			if (valA == valB) begin  // ALU에서 비교한 리턴값 보내주면 조건 대체
-                		next_PC = PC + {10'b0, offset}; // Branch if condition is met
+                		next_PC = read_data0; // Branch if condition is met
             		end else begin
                 		next_PC = PC + 4; // Increment to next instruction
             	end
