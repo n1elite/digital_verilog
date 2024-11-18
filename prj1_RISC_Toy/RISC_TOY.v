@@ -117,7 +117,7 @@ module RISC_TOY (
 				valB <= read_data1;
 			end
 			valA <= read_data0;  
-			offset <= instructino[26:22]; dest <= instruction[26:22];
+			offset <= instruction[26:22]; dest <= instruction[26:22];
 		end else if(BR || BRL) begin 
 			read_address0 <= instruction[21:17];
 			read_address1 <= instruction[16:12];
