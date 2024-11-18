@@ -109,8 +109,56 @@ module ALU (
             LD:   Result = ALUdo ? (valA + {{15{offset[16]}}, offset[16:0}}) : {{15{offset[16]}}, offset[16:0}};
         // LDR:  Result = valA+ {{20{offset[21]}}, offset[21:0}};
             ST:   Result = ALUdo ? (valA + {{15{offset[16]}}, offset[16:0}}) : {{15{offset[16]}}, offset[16:0}};
-        //수정필요,valA=pc 값으로 설정 STR:  Result = valA + {{20{offset[21]}}, offset[21:0}};
+            //수정필요,valA=pc 값으로 설정 STR:  Result = valA + {{20{offset[21]}}, offset[21:0]};
 
+         //J,JL,BR,BRL
+        J:Result= valA+ {{20{offset[21]}}, offset[21:0]};
+        JL:Result=valA+{{20{offset[21]}}, offset[21:0]};
+      // 헷갈림  
+                                                                                                         
+                                                                                                        
+BR:
+Result=
+       if(offset == 0) // Never 
+    
+       else if(offset == 1) // Always     
+            PC = valA;
+                                                                                                         
+       else if(offset== 2)  //Zero 
+           if(valB == 0)
+            PC = valA;
+                                                                                                            
+     else if(offset == 3) // Nonzero 
+           if(valB!= 0)
+           PC = valA;
+                                                                                                               
+    else if(offset== 4) // Plus 
+          if(valB >= 0)
+          PC = valA;
+                                                                                                                    
+  else if(offset == 5) // Minus 
+          if(valB < 0)
+         PC = valA;
+        
+BRL:
+// 이부분 더 추가해야되나 고민 Result=
+ if(offset == 0) // Never 
+    else if(offset == 1) // Always
+        PC = valA;
+    else if(offset == 2)   //Zero 
+        if(valB == 0)
+        PC = valA;
+    else if(offset == 3) // Nonzero
+        if(valB != 0)
+        PC =valA;
+    else if(offset == 4) // Plus 
+        if(valB >= 0)
+        PC =valA;
+    else if(offset == 5)  // Minus 
+        if(valB < 0)
+        PC = valA;
+                                                                                                        
+                                                                                                    
             // Default case
             default: Result = 32'b0;
         endcase
