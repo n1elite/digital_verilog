@@ -148,13 +148,14 @@ module RISC_TOY (
 			offset <= instruction[2:0]; //cond 
 			dest <= instruction[26:22];
 		end else if(JL || LDR || STR) begin 
-			valA <= PC // 현재 PC
+			valA <= PC; // 현재 PC
 			offset <= instruction[21:0]; //imm
 			dest <= instruction[26:22]; //ra
 		end else if(J) begin 
-			valA <= PC // 현재 PC
+			valA <= PC; // 현재 PC
 			offset <= instruction[21:0]; //imm
 		end
+	end
 	end
 
     ///////////////////////
