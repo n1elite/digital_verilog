@@ -81,11 +81,7 @@ module ALU (
 );
 
     parameter
-        ADDI = 5'b00000, ANDI = 5'b00001, ORI = 5'b00010, MOVI = 5'b00011, ADD = 5'b00100,
-        SUB = 5'b00101, NEG = 5'b00110, NOT = 5'b00111, AND = 5'b01000, OR = 5'b01001,
-        XOR = 5'b01010, LSR = 5'b01011, ASR = 5'b01100, SHL = 5'b01101, ROR = 5'b01110,
-        LD = 5'b10011, LDR = 5'b10100, ST = 5'b10101, STR = 5'b10110;
-
+        
     always @(*) begin
         case (ALUop)
             // Immediate 연산
@@ -110,10 +106,10 @@ module ALU (
             ROR:  Result = (valA >> valB[4:0]) | (valA << (32 - valB[4:0]));
 
             // Load/Store 연산
-            LD:   Result = ALUdo ? (valB + {{15{offset[16]}}, offset[16:0}}) : {{15{offset[16]}}, offset[16:0}};
-            LDR:  Result = valB + {{15{offset[16]}}, offset[16:0}};
-            ST:   Result = ALUdo ? (valB + {{15{offset[16]}}, offset[16:0}}) : {{15{offset[16]}}, offset[16:0}};
-            STR:  Result = valB + {{15{offset[16]}}, offset[16:0}};
+            LD:   Result = ALUdo ? (valA + {{15{offset[16]}}, offset[16:0}}) : {{15{offset[16]}}, offset[16:0}};
+            //수정필요.주소계산방식이 고정 LDR:  Result = valB+ {{15{offset[16]}}, offset[16:0}};
+            ST:   Result = ALUdo ? (valA + {{15{offset[16]}}, offset[16:0}}) : {{15{offset[16]}}, offset[16:0}};
+            //수정필요 얘도 고정,ALUdo 필요 없음STR:  Result = valB + {{15{offset[16]}}, offset[16:0}};
 
             // Default case
             default: Result = 32'b0;
