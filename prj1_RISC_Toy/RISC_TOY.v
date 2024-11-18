@@ -39,11 +39,37 @@ reg [31:0]EX_data1;
 
 //MUX////
 
-wire [31:0]A,B; wire signed [31:0]Imm; //Immediate Signed Extension
+    wire [31:0]valA,valB; wire signed [31:0]offset; //Immediate Signed Extension
 
-assign A= EX_ALUsigA? EX_PC:EX_data0; 
-assign B= EX_ALUsigB? EX_shamt:EX_data1;
-assign Imm=EX_ALUImm? EX_22:EX_17;
+//assign valA= EX_ALUsigA? EX_PC:EX_data0; 
+//assign valB= EX_ALUsigB? EX_shamt:EX_data1;
+//assign offset=EX_ALUImm? EX_22:EX_17;
+
+
+    // main 코드에서의 변수랑 내 코드 변수랑 맞추기
+
+    //ALU my_alu (
+    //.valA(alu_valA),
+    //.valB(alu_valB),
+    //.offset(alu_offset),
+    //.ALUop(alu_op),
+    //.ALUdo(alu_do),
+    //.Result(alu_result)
+);
+// 
+// assign alu_valA = DE_rv1;
+//assign alu_valB = DE_rv2;
+//assign alu_offset = DE_imm;
+//assign alu_op = DE_op;
+//assign alu_do = 1'b1;
+
+    //always @(posedge CLK or negedge RSTN) begin
+//if (~RSTN) begin
+  //      XM_aluout <= 0;
+   // end else begin
+    //    XM_aluout <= alu_result;
+    //end
+// end
 
 module ALU (
     input signed [31:0] valA,   // 레지스터 A 값
@@ -53,6 +79,7 @@ module ALU (
     input ALUdo,                // ALU 실행 제어 신호
     output reg signed [31:0] Result // 연산 결과
 );
+
     parameter
         ADDI = 5'b00000, ANDI = 5'b00001, ORI = 5'b00010, MOVI = 5'b00011, ADD = 5'b00100,
         SUB = 5'b00101, NEG = 5'b00110, NOT = 5'b00111, AND = 5'b01000, OR = 5'b01001,
