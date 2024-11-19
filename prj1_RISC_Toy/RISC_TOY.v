@@ -107,21 +107,21 @@ module RISC_TOY (
 			end else if(MOVI) begin 
 				read_address0 <= INSTR[26:22]; //ra 
 				valB <= read_data1; //R[ra]
-				offset <= {15'b0, instruction[16:0]}; //imm
+				offset <= {{15{instruction[16]}}, instruction[16:0]}; //imm
 				dest <= instruction[26:22]; //ra
 			end else if(ADD || SUB || AND || OR || XOR) begin 
 				read_address0 <= INSTR[21:17]; //rb
 				read_address1 <= INSTR[16:12]; //rc
 				valA <= read_data0; //R[rb]
 				valB <= read_data1; //R[rc]
-				offset <= {15'b0, instruction[26:22]}; //ra
+				offset <= {{15{instruction[16]}}, instruction[26:22]}; //ra
 				dest <= instruction[26:22]; //ra
 			end else if(NEG || NOT) begin 
 				read_address0 <= INSTR[26:22]; //ra
 				read_address1 <= INSTR[16:12]; //rc
 				valA <= read_data1; //R[rc] 
 				valB <= read_data0; //R[ra]
-				offset <= {15'b0, instruction[26:22]}; //ra 
+				offset <= {{15{instruction[16]}}, instruction[26:22]}; //ra 
 				dest <= instruction[26:22]; //ra
 			end else if(LSR || ASR || SHL || ROR) begin 
 				read_address0 <= instruction[21:17]; //rb
