@@ -102,7 +102,7 @@ module RISC_TOY (
 				read_address1 <= instruction[21:17]; //rb
 				valA <= read_data1;//R[ra]
 				valB <= read_data0;//R[rb] 
-				offset <= {15'b0, instruction[16:0]}; //상수
+				offset <= {{15{instruction[16]}}, instruction[16:0]}; //상수
 				dest <= instruction[26:22]; //ra
 			end else if(MOVI) begin 
 				read_address0 <= INSTR[26:22]; //ra 
