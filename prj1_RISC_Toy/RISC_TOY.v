@@ -85,7 +85,19 @@ module ALU (
     input ALUdo,                // ALU 실행 제어 신호
     output reg signed [31:0] Result // 연산 결과
 );
-    parameter
+    // ALU 
+wire [31:0] ALU_result;
+
+// ALU 
+ALU alu_inst (
+    .valA   (DE_valA),         
+    .valB   (DE_valB),        
+    .offset (DE_offset),      
+    .ALUop  (DE_ALUop),        
+    .ALUdo  (DE_ALUdo),        
+    .Result (ALU_result)       
+);
+
         
     always @(*) begin
         case (ALUop)
@@ -115,52 +127,33 @@ module ALU (
          //J,JL,BR,BRL
         J:Result= valA+ {{20{offset[21]}}, offset[21:0]};
         JL:Result=valA+{{20{offset[21]}}, offset[21:0]};
-      // 헷갈림  
+      
                                                                                                          
                                                                                                         
-BR:
-Result=
-       if(offset == 0) // Never 
-    
-       else if(offset == 1) // Always     
-            PC = valA;
-                                                                                                         
-       else if(offset== 2)  //Zero 
-           if(valB == 0)
-            PC = valA;
-                                                                                                            
-     else if(offset == 3) // Nonzero 
-           if(valB!= 0)
-           PC = valA;
-                                                                                                               
-    else if(offset== 4) // Plus 
-          if(valB >= 0)
-          PC = valA;
-                                                                                                                    
-  else if(offset == 5) // Minus 
-          if(valB < 0)
-         PC = valA;
-        
-BRL:
-//이부분 PC 값 할당만 하면됨. 코드맞는지도 체크 하기  
-     
-Result=
- if(offset == 0) // Never 
-    else if(offset == 1) // Always
-        PC = valA;
-    else if(offset == 2)   //Zero 
-        if(valB == 0)
-        PC = valA;
-    else if(offset == 3) // Nonzero
-        if(valB != 0)
-        PC =valA;
-    else if(offset == 4) // Plus 
-        if(valB >= 0)
-        PC =valA;
-    else if(offset == 5)  // Minus 
-        if(valB < 0)
-        PC = valA;
 
+BR:begin
+    case (offset)
+        0: Result = 0;                 // Never (No operation)
+        1: Result = valA;              // Always
+        2: Result = (valB == 0) ? valA : 0;  // Zero
+        3: Result = (valB != 0) ? valA : 0;  // Nonzero
+        4: Result = (valB >= 0) ? valA : 0;  // Plus
+        5: Result = (valB < 0) ? valA : 0;   // Minus
+        default: Result = 0;           // Default case (safe fallback)
+    endcase
+end
+
+BRL: begin
+    case (offset)
+        0: Result = 0;                 // Never (No operation)
+        1: Result = valA;              // Always
+        2: Result = (valB == 0) ? valA : 0;  // Zero
+        3: Result = (valB != 0) ? valA : 0;  // Nonzero
+        4: Result = (valB >= 0) ? valA : 0;  // Plus
+        5: Result = (valB < 0) ? valA : 0;   // Minus
+        default: Result = 0;           // Default case (safe fallback)
+    endcase
+end
 
             // Default case
             default: Result = 32'b0;
