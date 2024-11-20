@@ -36,13 +36,14 @@ module RISC_TOY (
     reg [29:0] IF_iaddr;
     reg [4:0] IF_op;
 
-    /////////////////IF_ID/////////////////
-    reg [4:0] FI_read_address0, FI_read_address1, FI_dest;      
+    /////////////////IF_ID/////////////////      
     reg [4:0] FI_op; 
     reg [31:0] FI_instr;                                        // 명령어
     reg [29:0] FI_iaddr;                                        // 명령어 add
     reg [31:0] FI_imm;
     reg [31:0] FI_valA, FI_valB;
+    wire [4:0] FI_read_address0, FI_read_address1, FI_dest;
+    wire [31:0] read_data0, read_data1;
 
     /////////////////ID_EX/////////////////
     reg [4:0] DE_read_address0, DE_read_address1 DE_dest;        // rega add _ regb add _ regc add _ opcode
@@ -149,8 +150,12 @@ module RISC_TOY (
 	wire STR = (IF_op == 5'b10110);
 
 
-	wire [31:0] read_data0, read_data1;
-
+	assign FI_read_address0 = (ADDI || ANDI || ORI || LD || ST || MOVI || NEG || NOT) ? IF_instr[26:22] : 
+		(ADD || SUB || AND || OR || XOR || LSR || ASR || SHL || ROR || BR || BRL) ? IF_instr[21:17] : 0;
+	assign FI_read_address1 = (ADDI || ANDI || ORI || LD || ST) ? IF_instr[21:17] : 
+		(ADD || SUB || AND || OR || XOR || NEG || NOT || BR || BRL ) ? IF_instr[16:12] :
+		((LSR || ASR || SHL || ROR) && IF_instr[5]) ? IF_instr[16:12] :IF_instr[4:0];
+		
 
     always @(posedge CLK or negedge RSTN) begin
 		if(!RSTN) begin
@@ -169,51 +174,33 @@ module RISC_TOY (
             	FI_instr <= IF_instr;
             	FI_op <= IF_op;
 			if(ADDI || ANDI || ORI || LD || ST) begin //MOVI 주의
-				FI_read_address0 <= IF_instr[26:22]; //ra
-				FI_read_address1 <= IF_instr[21:17]; //rb
 				FI_valA <= read_data1;//R[ra]
 				FI_valB <= read_data0;//R[rb] 
 				FI_imm <= {15'b0, IF_instr[16:0]}; //상수
 				FI_dest <= IF_instr[26:22]; //ra
 			end else if(MOVI) begin 
-				FI_read_address0 <= IF_instr[26:22]; //ra 
 				FI_valB <= read_data1; //R[ra]
 				FI_imm <= {15'b0, IF_instr[16:0]}; //imm
 				FI_dest <= IF_instr[26:22]; //ra
 			end else if(ADD || SUB || AND || OR || XOR) begin 
-				FI_read_address0 <= IF_instr[21:17]; //rb
-				FI_read_address1 <= IF_instr[16:12]; //rc
 				FI_valA <= read_data0; //R[rb]
 				FI_valB <= read_data1; //R[rc]
 				FI_imm <= {15'b0, IF_instr[26:22]}; //ra
 				FI_dest <= IF_instr[26:22]; //ra
 			end else if(NEG || NOT) begin 
-				FI_read_address0 <= IF_instr[26:22]; //ra
-				FI_read_address1 <= IF_instr[16:12]; //rc
 				FI_valA <= read_data1; //R[rc] 
 				FI_valB <= read_data0; //R[ra]
 				FI_imm <= {15'b0, IF_instr[26:22]}; //ra 
 				FI_dest <= IF_instr[26:22]; //ra
 			end else if(LSR || ASR || SHL || ROR) begin 
-				FI_read_address0 <= IF_instr[21:17]; //rb
-					if (IF_instr[5] == 0)
-						FI_valB <= IF_instr[4:0]; //shamt
-					else begin
-						FI_read_address1 <= IF_instr[16:12]; //rc
-						FI_valB <= read_data1; //R[rc]
-					end
 				FI_valA <= read_data0; //R[rb]  
 				FI_imm <= IF_instr[26:22]; //ra
 				FI_dest <= IF_instr[26:22]; //ra
 			end else if(BR) begin 
-				FI_read_address0 <= IF_instr[21:17]; //rb
-				FI_read_address1 <= IF_instr[16:12]; //rc
 				FI_valA <= read_data0; //R[rb]
 				FI_valB <= read_data1; //R[rc]
 				FI_imm <= IF_instr[2:0]; //cond
 			end else if(BRL) begin 
-				FI_read_address0 <= IF_instr[21:17]; //rb
-				FI_read_address1 <= IF_instr[16:12]; //rc
 				FI_valA <= read_data0; //R[rb]
 				FI_valB <= read_data1; //R[rc]
 				FI_imm <= IF_instr[2:0]; //cond 
