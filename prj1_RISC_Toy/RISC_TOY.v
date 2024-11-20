@@ -95,13 +95,13 @@ module RISC_TOY (
     REGFILE    #(.AW(5), .ENTRY(32))    RegFile (
                     .CLK    (CLK),
                     .RSTN   (RSTN),
-                    .WEN    (),
-                    .WA     (),
-                    .DI     (),
-                    .RA0    (),
-                    .RA1    (),
-                    .DOUT0  (),
-                    .DOUT1  ()
+	    	    .WEN    (WEN),
+	    .WA     (0),
+	    .DI     (1),
+	    .RA0    (FI_read_address0),
+	    .RA1    (FI_read_address1),
+	    .DOUT0  (read_data0),
+	    .DOUT1  (read_data1)
     );
 
 
