@@ -50,7 +50,7 @@ module RISC_TOY (
     reg [4:0] DE_op; 
     reg [31:0] DE_valA, DE_valB, DE_imm;                          // FI_valA _ FI_valB _ FI_imm 
     reg [31:0] DE_instr;                                        // 명령어
-	reg [29:0] DE_iaddr;                                        // 명령어 add
+    reg [29:0] DE_iaddr;                                        // 명령어 add
 
     
     reg DE_we, DE_wer;                                          // DREQ가 될 녀석, IREQ가 될 녀석   (write enalbe / write enable reg)
@@ -78,17 +78,6 @@ module RISC_TOY (
     reg [31:0] PC;  // Program Counter
     reg [31:0] next_PC;
 
-    always @(posedge CLK or negedge RSTN) begin
-       	if (!RSTN) begin
-           		PC <= 0; // Reset Program Counter
-		IF_instr <= 0;
-       	end else begin
-           		PC <= next_PC; // Update Program Counter
-		IF_instr <= INSTR;
-       	end
-    end
-
-
 
 
     // REGISTER FILE FOR GENRAL PURPOSE REGISTERS
@@ -115,10 +104,12 @@ module RISC_TOY (
         if(~RSTN) begin
             IF_op <= 0;
             IF_instr <= 0;
+	    IF_iaddr <= 0;
         end
         else begin
             IF_op <= INSTR[31:27];
             IF_instr <= INSTR;
+	    IF_iaddr <= PC[31:2];
         end
         
     end
