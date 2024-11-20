@@ -77,7 +77,7 @@ module RISC_TOY (
 
     reg [31:0] PC;  // Program Counter
     reg [31:0] next_PC;
-
+    
 
 
     // REGISTER FILE FOR GENRAL PURPOSE REGISTERS
@@ -85,8 +85,8 @@ module RISC_TOY (
                     .CLK    (CLK),
                     .RSTN   (RSTN),
 	    	    .WEN    (WEN),
-	    .WA     (0),
-	    .DI     (1),
+	    .WA     (WA),
+	    .DI     (DI),
 	    .RA0    (FI_read_address0),
 	    .RA1    (FI_read_address1),
 	    .DOUT0  (read_data0),
@@ -106,7 +106,7 @@ module RISC_TOY (
             IF_instr <= 0;
 	    IF_iaddr <= 0;
         end
-        else begin
+	else if (IREQ) begin
             IF_op <= INSTR[31:27];
             IF_instr <= INSTR;
 	    IF_iaddr <= PC[31:2];
