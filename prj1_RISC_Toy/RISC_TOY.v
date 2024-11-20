@@ -41,12 +41,12 @@ module RISC_TOY (
     reg [31:0] FI_instr;                                        // 명령어
     reg [29:0] FI_iaddr;                                        // 명령어 add
     reg [31:0] FI_imm;
-    reg [31:0] FI_valA, FI_valB;
-    wire [4:0] FI_read_address0, FI_read_address1, FI_dest;
+    reg [31:0] FI_valA, FI_valB, FI_dest;
+    wire [4:0] FI_read_address0, FI_read_address1;
     wire [31:0] read_data0, read_data1;
 
     /////////////////ID_EX/////////////////
-    reg [4:0] DE_read_address0, DE_read_address1 DE_dest;        // rega add _ regb add _ regc add _ opcode
+    reg [4:0] DE_read_address0, DE_read_address1, DE_dest;        // rega add _ regb add _ regc add _ opcode
     reg [4:0] DE_op; 
     reg [31:0] DE_valA, DE_valB, DE_imm;                          // FI_valA _ FI_valB _ FI_imm 
     reg [31:0] DE_instr;                                        // 명령어
@@ -159,8 +159,6 @@ module RISC_TOY (
 
     always @(posedge CLK or negedge RSTN) begin
 		if(!RSTN) begin
-			FI_read_address0 <= 0;
-			FI_read_address1 <= 0;
 			FI_valA <= 0;
 			FI_valB <= 0;
 			FI_imm <= 0;
