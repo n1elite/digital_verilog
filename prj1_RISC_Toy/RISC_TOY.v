@@ -160,14 +160,14 @@ module RISC_TOY (
 			FI_valB <= 0;
 			FI_imm <= 0;
 			FI_dest <= 0;
-            FI_iaddr <= 0;
-            FI_instr <= 0;
-            FI_op <= 0;
+            		FI_iaddr <= 0;
+            		FI_instr <= 0;
+            		FI_op <= 0;
 			PC <= 0;
 		end else begin 
-            FI_iaddr <= IF_iaddr;
-            FI_instr <= IF_instr;
-            FI_op <= IF_op;
+            	FI_iaddr <= IF_iaddr;
+            	FI_instr <= IF_instr;
+            	FI_op <= IF_op;
 			if(ADDI || ANDI || ORI || LD || ST) begin //MOVI 주의
 				FI_read_address0 <= IF_instr[26:22]; //ra
 				FI_read_address1 <= IF_instr[21:17]; //rb
