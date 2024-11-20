@@ -235,16 +235,24 @@ module RISC_TOY (
            	end else if (J || JL) begin
     		next_PC = PC + FI_imm; // Jump with FI_imm
            	end else if (BR || BRL) begin
-    		if (FI_valA == FI_valB) begin  // ALU에서 비교한 리턴값 보내주면 조건 대체
-            	next_PC = read_data0; // Branch if condition is met
-            end else begin
+    			if (FI_valA == FI_valB) begin  // ALU에서 비교한 리턴값 보내주면 조건 대체
+            			next_PC = read_data0; // Branch if condition is met
+                end else begin
            		next_PC = PC + 4; // Increment to next IF_instr
            	end
-       	end else begin
+        	end else begin
         	next_PC = PC + 4; // Default: increment by 4 (next IF_instr)
-       	end
+       		end
+    		end
     end
-
+	
+    always @(posedge CLK or negedge RSTN) begin
+    	if (!RSTN) begin
+        	PC <= 0;
+    	end else begin
+        	PC <= next_PC;
+    	end
+    end
 
 
 endmodule
