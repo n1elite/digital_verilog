@@ -116,7 +116,7 @@ module RISC_TOY (
 
 	
     /////////////////PC/////////////////
-    wire [29:0] PC;  // Program Counter
+    reg [29:0] PC;  // Program Counter
     assign PC = (EX_PC_F == 0) ? IF_iaddr :	EX_iaddr - 1;
 
     /////////////////IF/////////////////
@@ -124,7 +124,8 @@ module RISC_TOY (
         if(~RSTN) begin
             IF_op <= 0;
             IF_instr <= 0;
-			IF_iaddr <= 0;
+	    IF_iaddr <= 0;
+	    PC <= 0;
         end
         else begin
             IF_op <= INSTR[31:27];
