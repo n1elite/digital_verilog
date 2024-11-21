@@ -159,15 +159,15 @@ module RISC_TOY (
 			ID_valB <= 0;
 			ID_imm <= 0;
 			ID_dest <= 0;
-            ID_iaddr <= 0;
-            ID_instr <= 0;
-            ID_op <= 0;
+          		ID_iaddr <= 0;
+           		ID_instr <= 0;
+            		ID_op <= 0;
 		end else begin 
-            ID_iaddr <= IF_iaddr;
-            ID_instr <= IF_instr;
-            ID_op <= IF_op;
-			case(IF_op)
-				`ADDI, `ANDI, `ORI: begin
+            		ID_iaddr <= IF_iaddr;
+            		ID_instr <= IF_instr;
+            		ID_op <= IF_op;
+				case(IF_op)
+					`ADDI, `ANDI, `ORI: begin
 					ID_valA <= read_data1;//R[ra]
 					ID_valB <= read_data0;//R[rb] 
 					ID_imm <= {{15{IF_instr[16]}}, IF_instr[16:0]}; //상수
@@ -239,18 +239,18 @@ module RISC_TOY (
         	`SHL:  ALU_out = ID_valA << ID_valB[4:0];		//조건문안해도 될드?
         	`ROR:  ALU_out = (ID_valA >> ID_valB[4:0]) | (ID_valA << (32 - ID_valB[4:0]));		//조건문안해도 될드?
         	`BR :  begin
-				if(ID_instr[2:0] == 0) begin
-				end
-				else if (ID_instr[2:0] == 1)begin
+			if(ID_instr[2:0] == 0) begin
+			end
+			else if (ID_instr[2:0] == 1)begin
+				ALU_PC <= ID_valA;
+				EX_BR_enable <= 1;
+			end
+			else if (ID_instr[2:0] == 2)begin
+				if(ID_valB == 0)begin
 					ALU_PC <= ID_valA;
 					EX_BR_enable <= 1;
 				end
-				else if (ID_instr[2:0] == 2)begin
-					if(ID_valB == 0)begin
-						ALU_PC <= ID_valA;
-						EX_BR_enable <= 1;
-					end
-				end
+			end
 				else if (ID_instr[2:0] == 3)begin
 					if(ID_valB != 0)begin
 						ALU_PC <= ID_valA;
@@ -271,42 +271,42 @@ module RISC_TOY (
 				end
 			end
         	`BRL:	begin
-				ALU_out = ID_iaddr;
-				if(ID_instr[2:0] == 0) begin
-				end
-				else if (ID_instr[2:0] == 1)begin
+			ALU_out = ID_iaddr;
+			if(ID_instr[2:0] == 0) begin
+			end
+			else if (ID_instr[2:0] == 1)begin
+				ALU_PC <= ID_valA;
+				EX_BR_enable <= 1;
+			end
+			else if (ID_instr[2:0] == 2)begin
+				if(ID_valB == 0)begin
 					ALU_PC <= ID_valA;
 					EX_BR_enable <= 1;
 				end
-				else if (ID_instr[2:0] == 2)begin
-					if(ID_valB == 0)begin
-						ALU_PC <= ID_valA;
-						EX_BR_enable <= 1;
-					end
-				end
-				else if (ID_instr[2:0] == 3)begin
-					if(ID_valB != 0)begin
-						ALU_PC <= ID_valA;
-						EX_BR_enable <= 1;
-					end
-				end
-				else if (ID_instr[2:0] == 4)begin
-					if(ID_valB >= 0)begin
-						ALU_PC <= ID_valA;
-						EX_BR_enable <= 1;
-					end
-				end
-				else if (ID_instr[2:0] == 5)begin
-					if(ID_valB < 0)begin
-						ALU_PC <= ID_valA;
-						EX_BR_enable <= 1;
-					end
+			end
+			else if (ID_instr[2:0] == 3)begin
+				if(ID_valB != 0)begin
+					ALU_PC <= ID_valA;
+					EX_BR_enable <= 1;
 				end
 			end
+			else if (ID_instr[2:0] == 4)begin
+				if(ID_valB >= 0)begin
+					ALU_PC <= ID_valA;
+					EX_BR_enable <= 1;
+				end
+			end
+			else if (ID_instr[2:0] == 5)begin
+				if(ID_valB < 0)begin
+					ALU_PC <= ID_valA;
+					EX_BR_enable <= 1;
+				end
+			end
+		end
         	`J  :  ALU_PC = {ID_iaddr, 2'b0} + ID_imm;
         	`JL :  begin
-				ALU_out ={ID_iaddr, 2'b0};
-				ALU_PC = {ID_iaddr, 2'b0} + ID_imm;
+			ALU_out ={ID_iaddr, 2'b0};
+			ALU_PC = {ID_iaddr, 2'b0} + ID_imm;
 			end
 			`LD : begin //수정!
 				if(ID_valB == 5'b11111) begin				 //memory 알켜야 함  read신호
@@ -335,22 +335,21 @@ module RISC_TOY (
 			EX_ALU_out <= 0;
 			EX_valB <= 0;
 			EX_imm <= 0;
-            EX_iaddr <= 0;
-            EX_instr <= 0;
+         		EX_iaddr <= 0;
+            		EX_instr <= 0;
 		end else begin
 			EX_dest <= ID_dest;
 			EX_op <= ID_op;
 			EX_ALU_out <= ALU_out;
 			EX_valB <= ID_valB;
-            
 			EX_iaddr <= ID_iaddr;
-            EX_instr <= ID_instr;
-			if (ID_op == `BR || ID_op == `BRL || ID_op == `J || ID_op == `JL)	begin
-				EX_iaddr <= ALU_PC;
-			end	else begin
-				EX_iaddr <= ID_iaddr;
-			end
+            		EX_instr <= ID_instr;
+		if (ID_op == `BR || ID_op == `BRL || ID_op == `J || ID_op == `JL)	begin
+			EX_iaddr <= ALU_PC;
+		end else begin
+			EX_iaddr <= ID_iaddr;
 		end
+	end
 	end
 
 	/////////////////EX_MEM/////////////////
