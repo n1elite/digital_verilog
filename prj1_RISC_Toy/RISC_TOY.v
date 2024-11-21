@@ -125,7 +125,7 @@ module RISC_TOY (
 	
     /////////////////PC/////////////////
     reg [29:0] PC;  // Program Counter
-	assign PC = (EX_PC_F == 0) ? IF_iaddr :	EX_iaddr - 4;
+    assign PC = (EX_PC_F == 0) ? IF_iaddr : EX_iaddr - 4;
 
     /////////////////IF/////////////////
 
@@ -135,12 +135,11 @@ module RISC_TOY (
         	stall <= 0;
     	end else begin
         	// 데이터 의존성 조건: EX 단계의 결과를 ID 단계에서 사용
-        	if ((EX_dest != 0) && 
-            		((EX_dest == FI_read_address0) || (EX_dest == FI_read_address1))) begin
+		if (forwadB_EX) begin
             		stall <= 1; // 스톨 활성화
-			
         	end else begin
             		stall <= 0; // 스톨 해제
+			stall_instr <= 0;
         	end
     	end
 	end
@@ -151,17 +150,14 @@ module RISC_TOY (
             IF_instr <= 0;
 	    IF_iaddr <= 0;
 	    PC <= 0;
-	end else if (!stall && IREQ) begin
+	end else if (!stall) begin
             IF_op <= INSTR[31:27];
             IF_instr <= INSTR;
 	    IF_iaddr <= PC + 4;
-      /*  end  else if(stall && !IREQ) begin
-			stall_instr <= INSTR;
-	    		IF_instr <= stall_instr; */
-		end
+        end 
      end
 
-	assign IREQ = (stall) ? 0 : 1;
+	assign IREQ = 1;
 	assign IADDR = IF_iaddr;
 
     /////////////////IF_ID/////////////////
@@ -242,12 +238,39 @@ module RISC_TOY (
 					ID_dest <= IF_instr[26:22]; //ra
 				end
 			endcase
-		end
+		end else if(stall)
+			stall_instr <= IF_instr;
+	    		ID_instr <= stall_instr;
 	end
 
 
 	/////////////////ID_EX/////////////////
-	assign ALU_out = (ID_op == `ADDI) ? ID_valB + ID_imm :
+	assign ALU_out = (forwardA_EX || forwardB_EX) ? ((ID_op == `ADDI) ? ALU_srcB + ID_imm :
+							 (ID_op == `ADD) ? ALU_srcA + ALU_srcB :
+							 (ID_op == `ANDI) ? ALU_srcB & ID_imm :
+							 (ID_op == `ORI)  ? ALU_srcB | ID_imm :
+                	 (ID_op == `MOVI) ? ID_imm :
+							 (ID_op == `ADD)  ? ALU_srcA + ALU_srcB :
+							 (ID_op == `SUB)  ? ALU_srcA - ALU_srcB :
+							 (ID_op == `NEG)  ? -ALU_srcB :
+							 (ID_op == `NOT)  ? ~ALU_srcB :
+							 (ID_op == `AND)  ? ALU_srcA & ALU_srcB :
+							 (ID_op == `OR)   ? ALU_srcA | ALU_srcB :
+							 (ID_op == `XOR)  ? ALU_srcA ^ ALU_srcB :
+							 (ID_op == `LSR)  ? ALU_srcA >> ALU_srcB[4:0] :
+							 (ID_op == `ASR)  ? ALU_srcA >>> ALU_srcB[4:0] :
+							 (ID_op == `SHL)  ? ALU_srcA << ALU_srcB[4:0] :
+							 (ID_op == `ROR)  ? (ALU_srcA >> ALU_srcB[4:0]) | (ALU_srcA << (32 - ALU_srcB[4:0])) :
+                	 				(ID_op == `BRL)  ? {ID_iaddr, 2'b0} :
+                	 				(ID_op == `JL)   ? {ID_iaddr, 2'b0} :
+							 (ID_op == `LD && ALU_srcB == 5'b11111) ? {15'b0, ID_imm[16:0]} :
+							 (ID_op == `LD) ? ID_imm + ALU_srcB :
+                	 (ID_op == `LDR) ? {ID_iaddr, 2'b0} + ID_imm :
+							 (ID_op == `ST && ALU_srcA == 5'b11111) ? {15'b0, ID_imm[16:0]} :
+							 (ID_op == `ST) ? ID_imm + ALU_srcB :
+							 (ID_op == `STR) ? {ID_iaddr, 2'b0} + ID_imm : 0) :
+		((ID_op == `ADDI) ? ID_valB + ID_imm :
+		 (ID_op == `ADD) ? ID_valA + ID_valB :
                  	 (ID_op == `ANDI) ? ID_valB & ID_imm :
                 	 (ID_op == `ORI)  ? ID_valB | ID_imm :
                 	 (ID_op == `MOVI) ? ID_imm :
@@ -269,7 +292,7 @@ module RISC_TOY (
                 	 (ID_op == `LDR) ? {ID_iaddr, 2'b0} + ID_imm :
                 	 (ID_op == `ST && ID_valA == 5'b11111) ? {15'b0, ID_imm[16:0]} :
                 	 (ID_op == `ST) ? ID_imm + ID_valB :
-                	 (ID_op == `STR) ? {ID_iaddr, 2'b0} + ID_imm : 0;
+		 (ID_op == `STR) ? {ID_iaddr, 2'b0} + ID_imm : 0);
 
 	assign ALU_PC = (ID_op == `BR && ID_instr[2:0] == 1) ? ID_valA :
                 	(ID_op == `BR && ID_instr[2:0] == 2 && ID_valB == 0) ? ID_valA :
