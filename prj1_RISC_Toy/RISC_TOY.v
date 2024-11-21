@@ -135,8 +135,7 @@ module RISC_TOY (
         	stall <= 0;
     	end else begin
         	// 데이터 의존성 조건: EX 단계의 결과를 ID 단계에서 사용
-        	if ((EX_dest != 0) && 
-            		((EX_dest == FI_read_address0) || (EX_dest == FI_read_address1))) begin
+		if (forwadB_EX) begin
             		stall <= 1; // 스톨 활성화
         	end else begin
             		stall <= 0; // 스톨 해제
@@ -269,7 +268,7 @@ module RISC_TOY (
                 	 (ID_op == `LDR) ? {ID_iaddr, 2'b0} + ID_imm :
 							 (ID_op == `ST && ALU_srcA == 5'b11111) ? {15'b0, ID_imm[16:0]} :
 							 (ID_op == `ST) ? ID_imm + ALU_srcB :
-							 (ID_op == `STR) ? {ID_iaddr, 2'b0} + ID_imm : 0)
+							 (ID_op == `STR) ? {ID_iaddr, 2'b0} + ID_imm : 0) :
 		((ID_op == `ADDI) ? ID_valB + ID_imm :
 		 (ID_op == `ADD) ? ID_valA + ID_valB :
                  	 (ID_op == `ANDI) ? ID_valB & ID_imm :
