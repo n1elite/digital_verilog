@@ -92,7 +92,7 @@ module RISC_TOY (
     reg [4:0] XM_op, XM_ra;												// opcode 5bit _ dest reg add
     reg [31:0] XM_aluout, XM_rv1, XM_rv2, XM_instr;							// alu EX_ALU_out _ ID_valA _ ID_valB _ 명령어
     reg [29:0] XM_iaddr;                                        // IF_instr add (PC) => DADDR
-    reg XM_we, XM_wer;
+    reg XM_we, XM_wer, XM_csn;
 
     /////////////////MEM_WB/////////////////
     reg [4:0] MW_op, MW_ra;                                     // opcode 5bit _ dest reg add
@@ -357,6 +357,22 @@ module RISC_TOY (
 	end
 
 	/////////////////EX_MEM/////////////////
+    SRAM #(
+        .BW(32),           // 데이터 폭 32비트 (기본값)
+        .AW(10),           // 주소 폭 10비트 (기본값)
+        .ENTRY(1024),      // 총 엔트리 수 (기본값)
+        .WRITE(0),         // 초기 메모리 파일 읽기
+        .MEM_FILE("mem.hex") // 초기 메모리 파일 이름
+    ) sram_inst (
+	    .CLK(CLK),         // 클럭 입력
+	    .CSN(~DREQ),         // 칩 선택 입력 (Active Low)
+	    .A(DADDR[11:2]),          // 주소 입력
+	    .WEN(~DRW),         // 읽기/쓰기 제어 입력
+	    .DI(DWDATA),      // 데이터 입력
+	    .DOUT(DRDATA)    // 데이터 출력
+    );
+
+	
     always @(posedge CLK or negedge RSTN) begin
         if (!RSTN) begin
             XM_op <= 0;
@@ -376,14 +392,15 @@ module RISC_TOY (
             XM_rv2 <= EX_valA;
             XM_instr <= EX_instr;
             XM_iaddr <= EX_iaddr;
-            XM_we <= (EX_op == `ST || EX_op == `STR) ? 1 : 0;
-            XM_wer <= (EX_op != `ST && EX_op != `STR && EX_op != `BR && EX_op != `BRL) ? 1 : 0;
+	    XM_csn <= (EX_op == `ST || EX_op == `STR || EX_op == `LD || EX_op == `LDR) ? 1 : 0;
+	    XM_we <= (EX_op == `ST || EX_op == `STR) ? 1 : 0; // 메모리 쓰기/읽기 신호
+	    XM_wer <= (EX_op != `ST && EX_op != `STR && EX_op != `BR && EX_op != `BRL) ? 1 : 0; // 레지스터 기록 신호
         end
     end
 
-    assign DREQ = XM_we;
+    assign DREQ = XM_csn;
     assign DRW = XM_we;
-    assign DADDR = XM_aluout[29:0];
+    assign DADDR = XM_aluout[31:2];
     assign DWDATA = XM_rv1;
 
     /////////////////MEM_WB/////////////////
