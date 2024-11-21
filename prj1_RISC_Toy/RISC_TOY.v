@@ -56,7 +56,7 @@ module RISC_TOY (
     reg [31:0] IF_instr;
     reg [29:0] IF_iaddr;
     reg [4:0] IF_op;
-
+    reg stall;
 
     /////////////////IF_ID/////////////////
     wire [4:0] FI_read_address0, FI_read_address1;
@@ -120,20 +120,35 @@ module RISC_TOY (
 	assign PC = (EX_PC_F == 0) ? IF_iaddr :	EX_iaddr - 4;
 
     /////////////////IF/////////////////
+    reg stall;
+
+// 스톨 조건 및 해제
+    always @(posedge CLK or negedge RSTN) begin
+    	if (!RSTN) begin
+        	stall <= 0;
+    	end else begin
+        	// 데이터 의존성 조건: EX 단계의 결과를 ID 단계에서 사용
+        	if ((EX_dest != 0) && 
+            		((EX_dest == FI_read_address0) || (EX_dest == FI_read_address1))) begin
+            		stall <= 1; // 스톨 활성화
+        	end else begin
+            		stall <= 0; // 스톨 해제
+        	end
+    	end
+	end
+	
     always @(posedge CLK or negedge RSTN) begin
         if(~RSTN) begin
             IF_op <= 0;
             IF_instr <= 0;
 	    IF_iaddr <= 0;
 	    PC <= 0;
-        end
-        else begin
+	else if(!stall) begin
             IF_op <= INSTR[31:27];
             IF_instr <= INSTR;
 	    IF_iaddr <= PC + 4;
-        end
-        
-    end
+        end 
+     end
 
 	assign IREQ = 1;
 	assign IADDR = IF_iaddr;
@@ -165,7 +180,7 @@ module RISC_TOY (
           		ID_iaddr <= 0;
            		ID_instr <= 0;
             		ID_op <= 0;
-		end else begin 
+		end else if(!stall) begin 
             		ID_iaddr <= IF_iaddr;
             		ID_instr <= IF_instr;
             		ID_op <= IF_op;
@@ -380,6 +395,8 @@ module RISC_TOY (
 			EX_csn <= 0;
 			EX_we <= 0;
 			EX_PC_F <= 0;
+		end else if (stall)
+			EX_op <= 5'b00000;
 		end else begin
 			EX_dest <= ID_dest;
 			EX_op <= ID_op;
