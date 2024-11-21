@@ -117,7 +117,7 @@ module RISC_TOY (
 	
     /////////////////PC/////////////////
     reg [29:0] PC;  // Program Counter
-    assign PC = (EX_PC_F == 0) ? IF_iaddr :	EX_iaddr - 1;
+	assign PC = (EX_PC_F == 0) ? IF_iaddr :	EX_iaddr - 4;
 
     /////////////////IF/////////////////
     always @(posedge CLK or negedge RSTN) begin
@@ -130,7 +130,7 @@ module RISC_TOY (
         else begin
             IF_op <= INSTR[31:27];
             IF_instr <= INSTR;
-	    IF_iaddr <= PC + 1;
+	    IF_iaddr <= PC + 4;
         end
         
     end
