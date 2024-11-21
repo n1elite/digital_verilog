@@ -27,9 +27,10 @@ module RISC_TOY (
 
 
     // WRITE YOUR CODE
-`define	ADDI 	5'b00001
+`define	ADDI 		5'b00000
+`define	ANDI 		5'b00001	
 `define	ORI		5'b00010
-`define	MOVI	5'b00011
+`define	MOVI		5'b00011
 `define ADD		5'b00100
 `define SUB		5'b00101
 `define NEG		5'b00110
