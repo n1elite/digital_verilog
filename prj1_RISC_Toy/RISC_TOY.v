@@ -183,7 +183,42 @@ always @(posedge CLK or negedge RSTN) begin
         XM_iaddr <= EX_iaddr;
         
       
+ if (EX_op == LD || EX_op == LDR) begin
+            // 메모리 읽기
+            XM_wer <= 1; //memory 읽기 활성화
+            XM_we <= 0;  //쓰기는 X
+        end else if (EX_op == ST || EX_op == STR) begin
+            // 메모리 쓰기
+            XM_wer <= 0; //memory 읽기 X
+           XM_we <= 1; // memroy 쓰기 활성 
+        end else begin
+            XM_wer <= 0;
+            XM_we <= 0;
 
+//////////////// WB ////////////////
+always @(posedge CLK or negedge RSTN) begin
+    if (!RSTN) begin
+        MW_op <= 0;
+        MW_ra <= 0;
+        MW_aluout <= 0;
+        MW_rv1 <= 0;
+        MW_rv2 <= 0;
+        MW_instr <= 0;
+        MW_iaddr <= 0;
+        MW_wer <= 0;
+        MW_we <= 0;
+    end else begin
+        MW_op <= XM_op;
+        MW_ra <= XM_ra;
+        MW_aluout <= XM_aluout;
+        MW_rv1 <= XM_rv1;
+        MW_rv2 <= XM_rv2;
+        MW_instr <= XM_instr;
+        MW_iaddr <= XM_iaddr;
+        MW_wer <= XM_wer;
+        MW_we <= XM_we;
+    end
+end
 
 
     // REGISTER FILE FOR GENRAL PURPOSE REGISTERS
