@@ -86,80 +86,135 @@ module ALU (
     output reg signed [31:0] Result // 연산 결과
 );
     // ALU 
-wire [31:0] ALU_result;
+/////////////////ID_EX/////////////////
+	always @(*) begin
+    	case (ID_op)
+        	// Immediate 연산
+        	ADDI: ALU_out = ID_valB + {{15{offset[16]}}, offset[16:0]};
+        	ANDI: ALU_out = ID_valB & {{15{offset[16]}}, offset[16:0]};
+        	ORI:  ALU_out = ID_valB | {{15{offset[16]}}, offset[16:0]};
+        	MOVI: ALU_out = {{15{offset[16]}}, offset[16:0]};
+        	// Register 간 연산
+        	ADD:  ALU_out = ID_valA + ID_valB;
+        	SUB:  ALU_out = ID_valA - ID_valB;
+        	NEG:  ALU_out = -ID_valB;
+        	NOT:  ALU_out = ~ID_valB;
+        	AND:  ALU_out = ID_valA & ID_valB;
+        	OR :  ALU_out = ID_valA | ID_valB;
+        	XOR:  ALU_out = ID_valA ^ ID_valB;
+        	// Shift 연산
+        	LSR:  ALU_out = ID_valA >> ID_valB[4:0];   		//조건문 안나눴음 안해도 될듯?
+        	ASR:  ALU_out = ID_valA >>> ID_valB[4:0];  		//조건문 안나눴음안해도 될듯?
+        	SHL:  ALU_out = ID_valA << ID_valB[4:0];		//조건문안해도 될듯?
+        	ROR:  ALU_out = (ID_valA >> ID_valB[4:0]) | (ID_valA << (32 - ID_valB[4:0]));		//조건문안해도 될듯?
+        	BR :  begin
+				if(ID_instr[2:0] == 0) begin
+				end
+				else if (ID_instr[2:0] == 1)begin
+					ALU_PC <= ID_valA;
+				end
+				else if (ID_instr[2:0] == 2)begin
+					if(ID_valB == 0)begin
+						ALU_PC <= ID_valA
+					end
+				end
+				else if (ID_instr[2:0] == 3)begin
+					if(ID_valB != 0)begin
+						ALU_PC <= ID_valA
+					end
+				end
+				else if (ID_instr[2:0] == 4)begin
+					if(ID_valB >= 0)begin
+						ALU_PC <= ID_valA
+					end
+				end
+				else if (ID_instr[2:0] == 5)begin
+					if(ID_valB < 0)begin
+						ALU_PC <= ID_valA
+					end
+				end
+			end
+        	BRL:	begin
+				ALU_out = ID_iaddr;
+				if(ID_instr[2:0] == 0) begin
+				end
+				else if (ID_instr[2:0] == 1)begin
+					ALU_PC <= ID_valA;
+				end
+				else if (ID_instr[2:0] == 2)begin
+					if(ID_valB == 0)begin
+						ALU_PC <= ID_valA
+					end
+				end
+				else if (ID_instr[2:0] == 3)begin
+					if(ID_valB != 0)begin
+						ALU_PC <= ID_valA
+					end
+				end
+				else if (ID_instr[2:0] == 4)begin
+					if(ID_valB >= 0)begin
+						ALU_PC <= ID_valA
+					end
+				end
+				else if (ID_instr[2:0] == 5)begin
+					if(ID_valB < 0)begin
+						ALU_PC <= ID_valA
+					end
+				end
+			end
+        	J  :  ALU_PC = {ID_iaddr, 2'b0} + ID_imm;
+        	JL :  begin
+				ALU_out ={ID_iaddr, 2'b0};
+				ALU_PC = {ID_iaddr, 2'b0} + ID_imm;
+			end
+			LD : begin //수정!
+				if(ID_instr[26:22] == 5'b11111) begin				 //memory 앍어야 함  read신호
+				    ALU_out <= 15'b0, ID_imm[16:0];    
+				end	else begin
+				    ALU_out <= ID_imm + ID_valB;         
+				end
+			end
+			LDR	: ALU_out <= {ID_iaddr, 2'b0} + ID_imm;        	//memory 앍어야 함  read신호
+			ST	: begin												//memory에 적어야 함 write 신호
+				if(instr21_17 == 5'b11111) begin	
+    				ALU_out <= 15'b0, ID_imm[16:0];
+				end	else begin
+				    ALU_out <= ID_imm + ID_valB;
+				end
+			end
+			STR : ALU_out <= {ID_iaddr, 2'b0} + ID_imm; 			//memory에 적어야 함 write 신호
+		endcase			
+	end      
 
-// ALU 
-ALU alu_inst (
-    .valA   (DE_valA),         
-    .valB   (DE_valB),        
-    .offset (DE_offset),      
-    .ALUop  (DE_ALUop),        
-    .ALUdo  (DE_ALUdo),        
-    .Result (ALU_result)       
-);
 
-        
-    always @(*) begin
-        case (ALUop)
-            // Immediate 연산
-            ADDI: Result = valB + {{15{offset[16]}}, offset[16:0}};
-            ANDI: Result = valB & {{15{offset[16]}}, offset[16:0}};
-            ORI:  Result = valB | {{15{offset[16]}}, offset[16:0}};
-            MOVI: Result = {{15{offset[16]}}, offset[16:0}};
-            // Register 간 연산
-            ADD:  Result = valA + valB;
-            SUB:  Result = valA - valB;
-            NEG:  Result = -valB;
-            NOT:  Result = ~valB;
-            AND:  Result = valA & valB;
-            OR:   Result = valA | valB;
-            XOR:  Result = valA ^ valB;
-            // Shift 연산
-            LSR:  Result = valA >> valB[4:0];
-            ASR:  Result = valA >>> valB[4:0];
-            SHL:  Result = valA << valB[4:0];
-            ROR:  Result = (valA >> valB[4:0]) | (valA << (32 - valB[4:0]));
-            // Load/Store 연산
-            LD:   Result = ALUdo ? (valA + {{15{offset[16]}}, offset[16:0}}) : {{15{offset[16]}}, offset[16:0}};
-         LDR:  Result = valA+ {{20{offset[21]}}, offset[21:0}};
-            ST:   Result = ALUdo ? (valA + {{15{offset[16]}}, offset[16:0}}) : {{15{offset[16]}}, offset[16:0}};
-            STR:  Result = valA + {{20{offset[21]}}, offset[21:0]};
-         //J,JL,BR,BRL
-        J:Result= valA+ {{20{offset[21]}}, offset[21:0]};
-        JL:Result=valA+{{20{offset[21]}}, offset[21:0]};
-      
-                                                                                                         
-                                                                                                        
+	always @(posedge CLK or negedge RSTN) begin
+		if(!RSTN) begin
+			EX_dest <= 0;
+			EX_op <= 0;
+			EX_ALU_out <= 0;
+			EX_valB <= 0;
+			EX_imm <= 0;
+            EX_iaddr <= 0;
+            EX_instr <= 0;
+		end else begin
+			EX_dest <= ID_dest;
+			EX_op <= ID_op;
+			EX_ALU_out <= ALU_out;
+			EX_valB <= ID_valB;
+            
+			EX_iaddr <= ID_iaddr;
+            EX_instr <= ID_instr;
+			if (ID_op == `BR || ID_op == `BRL || ID_op == `J || ID_op == `JL)	begin
+				EX_iaddr <= ALU_PC;
+			end	else begin
+				EX_iaddr <= ID_iaddr;
+			end
+		end
+	end
 
-BR:begin
-    case (offset)
-        0: Result = 0;                 // Never (No operation)
-        1: Result = valA;              // Always
-        2: Result = (valB == 0) ? valA : 0;  // Zero
-        3: Result = (valB != 0) ? valA : 0;  // Nonzero
-        4: Result = (valB >= 0) ? valA : 0;  // Plus
-        5: Result = (valB < 0) ? valA : 0;   // Minus
-        default: Result = 0;           // Default case (safe fallback)
-    endcase
-end
 
-BRL: begin
-    case (offset)
-        0: Result = 0;                 // Never (No operation)
-        1: Result = valA;              // Always
-        2: Result = (valB == 0) ? valA : 0;  // Zero
-        3: Result = (valB != 0) ? valA : 0;  // Nonzero
-        4: Result = (valB >= 0) ? valA : 0;  // Plus
-        5: Result = (valB < 0) ? valA : 0;   // Minus
-        default: Result = 0;           // Default case (safe fallback)
-    endcase
-end
 
-            // Default case
-            default: Result = 32'b0;
-        endcase
-    end
-endmodule
+
 
 
 ///////////////// MEM ///////////////
@@ -182,18 +237,6 @@ always @(posedge CLK or negedge RSTN) begin
         XM_instr <= EX_instr;
         XM_iaddr <= EX_iaddr;
         
-      
- if (EX_op == LD || EX_op == LDR) begin
-            // 메모리 읽기
-            XM_wer <= 1; //memory 읽기 활성화
-            XM_we <= 0;  //쓰기는 X
-        end else if (EX_op == ST || EX_op == STR) begin
-            // 메모리 쓰기
-            XM_wer <= 0; //memory 읽기 X
-           XM_we <= 1; // memroy 쓰기 활성 
-        end else begin
-            XM_wer <= 0;
-            XM_we <= 0;
 
 //////////////// WB ////////////////
 always @(posedge CLK or negedge RSTN) begin
