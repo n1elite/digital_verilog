@@ -27,7 +27,8 @@ module RISC_TOY (
 
 
     // WRITE YOUR CODE
-`define	ADDI 	5'b00001
+`define	ADDI 	5'b00000
+`define ANDI	5'b00001
 `define	ORI		5'b00010
 `define	MOVI	5'b00011
 `define ADD		5'b00100
@@ -83,7 +84,7 @@ module RISC_TOY (
     reg [31:0] EX_ALU_out, EX_valB;                          // ID_valA _ ID_valB _ ID_imm 
     reg [31:0] EX_instr;                                        // 명령어
 	reg [29:0] EX_iaddr;                                        // 명령어 add
-	reg [2:0] EX_cond;
+	reg EX_PC_F;
 
     
     reg EX_we, EX_wer;                                          // DREQ가 될 녀석, IREQ가 될 녀석   (write enalbe / write enable reg)
@@ -105,21 +106,13 @@ module RISC_TOY (
     reg MW_wer, MW_we;  // 계산 결과 이어받음 이게 mem에 연결되서 wer에서 enable되면 reg에 저장하고 we에서 enable되면 mem에 저장
 
 
-/*
 
-	/////////////////PC_reg/////////////////
-    wire [29:0] PC;  // Program Counter
-    wire [29:0] next_PC;
 
-    always @(posedge CLK or negedge RSTN) begin
-       	if (!RSTN) begin
-        	PC = 0; // Reset Program Counter
-			next_PC = 0;
-       	end else begin
-        	PC = next_PC; // Update Program Counter  //수정해야 할듯
-       	end
-    end
-*/
+
+
+
+
+
 
 
 
@@ -142,6 +135,11 @@ module RISC_TOY (
 
     // WRITE YOUR CODE
 
+	/////////////////PC/////////////////
+    wire [29:0] PC;  // Program Counter
+	assign PC = (EX_PC_F == 0) ? IF_iaddr :	EX_iaddr - 1;
+				
+
     /////////////////IF/////////////////
     always @(posedge CLK or negedge RSTN) begin
         if(~RSTN) begin
@@ -152,12 +150,13 @@ module RISC_TOY (
         else begin
             IF_op <= INSTR[31:27];
             IF_instr <= INSTR;
-			IF_iaddr <= PC;
+			IF_iaddr <= PC + 1;
         end
         
     end
 
-	IADDR = IF_iaddr;
+
+	assign IADDR = IF_iaddr;
 
     /////////////////IF_ID/////////////////
 
@@ -213,10 +212,17 @@ module RISC_TOY (
 					ID_valB <= read_data0; //R[ra]
 					ID_imm <= {27'b0, IF_instr[26:22]}; //ra 
 					ID_dest <= IF_instr[26:22]; //ra
-				end `LSR, `ASR, `SHL, `ROR: begin
-					ID_valA <= read_data0; //R[rb]  
-					ID_imm <= {27'b0, IF_instr[26:22]}; //ra			수정!
-					ID_dest <= IF_instr[26:22]; //ra	
+				end `LSR, `ASR, `SHL, `ROR: begin 
+            		ID_read_address0 <= IF_instr[21:17]; //rb
+               			if (IF_instr[5] == 0) begin
+                  	ID_valB <= IF_instr[4:0]; //shamt
+						end else begin
+                  	ID_read_address1 <= IF_instr[16:12]; //rc
+                  	ID_valB <= read_data1; //R[rc]
+               		end
+            		FI_valA <= read_data0; //R[rb]  
+            		FI_imm <= IF_instr[26:22]; //ra
+            		FI_dest <= IF_instr[26:22]; //ra	
 				end `BR: begin 
 					ID_valA <= read_data0; //R[rb]
 					ID_valB <= read_data1; //R[rc]
@@ -247,105 +253,146 @@ module RISC_TOY (
 
 
 	/////////////////ID_EX/////////////////
+	assign ALU_out = (ID_op == `ADDI) ? ID_valB + ID_imm :
+                 	 (ID_op == `ANDI) ? ID_valB & ID_imm :
+                	 (ID_op == `ORI)  ? ID_valB | ID_imm :
+                	 (ID_op == `MOVI) ? ID_imm :
+                	 (ID_op == `ADD)  ? ID_valA + ID_valB :
+                	 (ID_op == `SUB)  ? ID_valA - ID_valB :
+                	 (ID_op == `NEG)  ? -ID_valB :
+                	 (ID_op == `NOT)  ? ~ID_valB :
+                	 (ID_op == `AND)  ? ID_valA & ID_valB :
+                	 (ID_op == `OR)   ? ID_valA | ID_valB :
+                	 (ID_op == `XOR)  ? ID_valA ^ ID_valB :
+                	 (ID_op == `LSR)  ? ID_valA >> ID_valB[4:0] :
+                	 (ID_op == `ASR)  ? ID_valA >>> ID_valB[4:0] :
+                	 (ID_op == `SHL)  ? ID_valA << ID_valB[4:0] :
+                	 (ID_op == `ROR)  ? (ID_valA >> ID_valB[4:0]) | (ID_valA << (32 - ID_valB[4:0])) :
+                	 (ID_op == `BRL)  ? {ID_iaddr, 2'b0} :
+                	 (ID_op == `JL)   ? {ID_iaddr, 2'b0} :
+                	 (ID_op == `LD && ID_valB == 5'b11111) ? {15'b0, ID_imm[16:0]} :
+                	 (ID_op == `LD) ? ID_imm + ID_valB :
+                	 (ID_op == `LDR) ? {ID_iaddr, 2'b0} + ID_imm :
+                	 (ID_op == `ST && ID_valA == 5'b11111) ? {15'b0, ID_imm[16:0]} :
+                	 (ID_op == `ST) ? ID_imm + ID_valB :
+                	 (ID_op == `STR) ? {ID_iaddr, 2'b0} + ID_imm : 0;
+
+	assign ALU_PC = (ID_op == `BR && ID_instr[2:0] == 1) ? ID_valA :
+                	(ID_op == `BR && ID_instr[2:0] == 2 && ID_valB == 0) ? ID_valA :
+                	(ID_op == `BR && ID_instr[2:0] == 3 && ID_valB != 0) ? ID_valA :
+                	(ID_op == `BR && ID_instr[2:0] == 4 && ID_valB >= 0) ? ID_valA :
+                	(ID_op == `BR && ID_instr[2:0] == 5 && ID_valB < 0) ? ID_valA :
+                	(ID_op == `BRL && ID_instr[2:0] == 1) ? ID_valA :
+                	(ID_op == `BRL && ID_instr[2:0] == 2 && ID_valB == 0) ? ID_valA :
+                	(ID_op == `BRL && ID_instr[2:0] == 3 && ID_valB != 0) ? ID_valA :
+                	(ID_op == `BRL && ID_instr[2:0] == 4 && ID_valB >= 0) ? ID_valA :
+                	(ID_op == `BRL && ID_instr[2:0] == 5 && ID_valB < 0) ? ID_valA :
+                	(ID_op == `J) ? {ID_iaddr, 2'b0} + ID_imm :
+                	(ID_op == `JL) ? {ID_iaddr, 2'b0} + ID_imm : 0;
+
+
+	assign 
+
+	/* 만약 안되면 이거 쓰기
 	always @(*) begin
     	case (ID_op)
         	// Immediate 연산
-        	ADDI: ALU_out = ID_valB + {{15{offset[16]}}, offset[16:0]};
-        	ANDI: ALU_out = ID_valB & {{15{offset[16]}}, offset[16:0]};
-        	ORI:  ALU_out = ID_valB | {{15{offset[16]}}, offset[16:0]};
-        	MOVI: ALU_out = {{15{offset[16]}}, offset[16:0]};
+        	`ADDI: ALU_out <= ID_valB + {{15{offset[16]}}, offset[16:0]};
+        	`ANDI: ALU_out <= ID_valB & {{15{offset[16]}}, offset[16:0]};
+        	`ORI:  ALU_out <= ID_valB | {{15{offset[16]}}, offset[16:0]};
+        	`MOVI: ALU_out <= {{15{offset[16]}}, offset[16:0]};
         	// Register 간 연산
-        	ADD:  ALU_out = ID_valA + ID_valB;
-        	SUB:  ALU_out = ID_valA - ID_valB;
-        	NEG:  ALU_out = -ID_valB;
-        	NOT:  ALU_out = ~ID_valB;
-        	AND:  ALU_out = ID_valA & ID_valB;
-        	OR :  ALU_out = ID_valA | ID_valB;
-        	XOR:  ALU_out = ID_valA ^ ID_valB;
+        	`ADD:  ALU_out <= ID_valA + ID_valB;
+        	`SUB:  ALU_out <= ID_valA - ID_valB;
+        	`NEG:  ALU_out <= -ID_valB;
+        	`NOT:  ALU_out = ~ID_valB;
+        	`AND:  ALU_out = ID_valA & ID_valB;
+        	`OR :  ALU_out = ID_valA | ID_valB;
+        	`XOR:  ALU_out = ID_valA ^ ID_valB;
         	// Shift 연산
-        	LSR:  ALU_out = ID_valA >> ID_valB[4:0];   		//조건문 안나눴음 안해도 될듯?
-        	ASR:  ALU_out = ID_valA >>> ID_valB[4:0];  		//조건문 안나눴음안해도 될듯?
-        	SHL:  ALU_out = ID_valA << ID_valB[4:0];		//조건문안해도 될듯?
-        	ROR:  ALU_out = (ID_valA >> ID_valB[4:0]) | (ID_valA << (32 - ID_valB[4:0]));		//조건문안해도 될듯?
-        	BR :  begin
+        	`LSR:  ALU_out = ID_valA >> ID_valB[4:0];   		//조건문 안나눴음 안해도 될듯?
+        	`ASR:  ALU_out = ID_valA >>> ID_valB[4:0];  		//조건문 안나눴음안해도 될듯?
+        	`SHL:  ALU_out = ID_valA << ID_valB[4:0];		//조건문안해도 될듯?
+        	`ROR:  ALU_out = (ID_valA >> ID_valB[4:0]) | (ID_valA << (32 - ID_valB[4:0]));		//조건문안해도 될듯?
+        	`BR :  begin
 				if(ID_instr[2:0] == 0) begin
 				end
 				else if (ID_instr[2:0] == 1)begin
-					ALU_PC <= ID_valA;
+					ALU_PC = ID_valA;
 				end
 				else if (ID_instr[2:0] == 2)begin
 					if(ID_valB == 0)begin
-						ALU_PC <= ID_valA
+						ALU_PC = ID_valA;
 					end
 				end
 				else if (ID_instr[2:0] == 3)begin
 					if(ID_valB != 0)begin
-						ALU_PC <= ID_valA
+						ALU_PC = ID_valA;
 					end
 				end
 				else if (ID_instr[2:0] == 4)begin
 					if(ID_valB >= 0)begin
-						ALU_PC <= ID_valA
+						ALU_PC = ID_valA;
 					end
 				end
 				else if (ID_instr[2:0] == 5)begin
 					if(ID_valB < 0)begin
-						ALU_PC <= ID_valA
+						ALU_PC = ID_valA;
 					end
 				end
 			end
-        	BRL:	begin
-				ALU_out = ID_iaddr;
+        	`BRL:	begin
+				ALU_out = {ID_iaddr, 2'b0};
 				if(ID_instr[2:0] == 0) begin
 				end
 				else if (ID_instr[2:0] == 1)begin
-					ALU_PC <= ID_valA;
+					ALU_PC = ID_valA;
 				end
 				else if (ID_instr[2:0] == 2)begin
 					if(ID_valB == 0)begin
-						ALU_PC <= ID_valA
+						ALU_PC = ID_valA;
 					end
 				end
 				else if (ID_instr[2:0] == 3)begin
 					if(ID_valB != 0)begin
-						ALU_PC <= ID_valA
+						ALU_PC = ID_valA;
 					end
 				end
 				else if (ID_instr[2:0] == 4)begin
 					if(ID_valB >= 0)begin
-						ALU_PC <= ID_valA
+						ALU_PC = ID_valA;
 					end
 				end
 				else if (ID_instr[2:0] == 5)begin
 					if(ID_valB < 0)begin
-						ALU_PC <= ID_valA
+						ALU_PC = ID_valA;
 					end
 				end
 			end
-        	J  :  ALU_PC = {ID_iaddr, 2'b0} + ID_imm;
-        	JL :  begin
+        	`J  :  ALU_PC = {ID_iaddr, 2'b0} + ID_imm;
+        	`JL :  begin
 				ALU_out ={ID_iaddr, 2'b0};
 				ALU_PC = {ID_iaddr, 2'b0} + ID_imm;
 			end
-			LD : begin //수정!
-				if(ID_instr[26:22] == 5'b11111) begin				 //memory 앍어야 함  read신호
-				    ALU_out <= 15'b0, ID_imm[16:0];    
+			`LD : begin //수정!
+				if(ID_valB == 5'b11111) begin				 //memory 앍어야 함  read신호
+				    ALU_out = {15'b0, ID_imm[16:0]};    
 				end	else begin
-				    ALU_out <= ID_imm + ID_valB;         
+				    ALU_out = ID_imm + ID_valB;         
 				end
 			end
-			LDR	: ALU_out <= {ID_iaddr, 2'b0} + ID_imm;        	//memory 앍어야 함  read신호
-			ST	: begin												//memory에 적어야 함 write 신호
-				if(instr21_17 == 5'b11111) begin	
-    				ALU_out <= 15'b0, ID_imm[16:0];
+			`LDR	: ALU_out = {ID_iaddr, 2'b0} + ID_imm;        	//memory 앍어야 함  read신호
+			`ST	: begin												//memory에 적어야 함 write 신호
+				if(ID_valA == 5'b11111) begin	
+    				ALU_out = 15'b0, ID_imm[16:0];
 				end	else begin
-				    ALU_out <= ID_imm + ID_valB;
+				    ALU_out = ID_imm + ID_valB;
 				end
 			end
-			STR : ALU_out <= {ID_iaddr, 2'b0} + ID_imm; 			//memory에 적어야 함 write 신호
+			`STR : ALU_out = {ID_iaddr, 2'b0} + ID_imm; 			//memory에 적어야 함 write 신호
 		endcase			
 	end      
-
+	*/
 
 	always @(posedge CLK or negedge RSTN) begin
 		if(!RSTN) begin
@@ -353,21 +400,22 @@ module RISC_TOY (
 			EX_op <= 0;
 			EX_ALU_out <= 0;
 			EX_valB <= 0;
-			EX_imm <= 0;
             EX_iaddr <= 0;
             EX_instr <= 0;
+			EX_PC_F <= 0;
 		end else begin
 			EX_dest <= ID_dest;
 			EX_op <= ID_op;
 			EX_ALU_out <= ALU_out;
 			EX_valB <= ID_valB;
-            
 			EX_iaddr <= ID_iaddr;
             EX_instr <= ID_instr;
 			if (ID_op == `BR || ID_op == `BRL || ID_op == `J || ID_op == `JL)	begin
-				EX_iaddr <= ALU_PC;
+				EX_iaddr <= ALU_PC[31:2];
+				EX_PC_F <= 1;
 			end	else begin
 				EX_iaddr <= ID_iaddr;
+				EX_PC_F <= 0;
 			end
 		end
 	end
@@ -404,30 +452,3 @@ module RISC_TOY (
 
 
 endmodule
-
-
-
-
-
-
-
-
-
-
-
-	////////////////
-	SRAM	#(.BW(32), .AW(10), .ENTRY(1024), .WRITE(0), .MEM_FILE("mem.hex"))		Sram(
-					.CLK	(CLK),
-					.CSN	(),
-					.A		(Memory_read_add),
-					.WEN	(),
-					.DI		(),
-					.DOUT	(Memory_read_out)
-	);
-
-	wire[31:0] Memory_read_add;
-	wire[31:0] Memory_read_out;
-
-	
-	//이거 써야 됨
-
