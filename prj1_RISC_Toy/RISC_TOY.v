@@ -237,7 +237,18 @@ always @(posedge CLK or negedge RSTN) begin
         XM_instr <= EX_instr;
         XM_iaddr <= EX_iaddr;
         
-
+	if (ID_op == `LD || ID_op == `LDR) begin
+            EX_wer <= 1;  // 메모리 읽기 요청
+            EX_we <= 0;   // 쓰기 동작 비활성화
+        end else if (ID_op == `ST || ID_op == `STR) begin
+            EX_wer <= 0;  // 읽기 동작 비활성화
+            EX_we <= 1;   // 메모리 쓰기 요청
+        end else begin
+            EX_wer <= 0;
+            EX_we <= 0;
+        end
+    end
+end
 //////////////// WB ////////////////
 always @(posedge CLK or negedge RSTN) begin
     if (!RSTN) begin
