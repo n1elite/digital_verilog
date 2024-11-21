@@ -59,7 +59,7 @@ module RISC_TOY (
 
 
     /////////////////IF_ID/////////////////
-	wire [4:0] FI_read_address0, FI_read_address1;
+    wire [4:0] FI_read_address0, FI_read_address1;
     wire [31:0] read_data0, read_data1;
 
 
@@ -83,21 +83,19 @@ module RISC_TOY (
     reg [4:0] EX_op; 
     reg [31:0] EX_ALU_out, EX_valA, EX_valB, EX_imm;                          // ID_valA _ ID_valB _ ID_imm 
     reg [31:0] EX_instr;                                        // 명령어
-	reg [29:0] EX_iaddr;                                        // 명령어 add
-	reg [2:0] EX_cond;
-	reg EX_BR_enable;
+    reg [29:0] EX_iaddr;                                        // 명령어 add
+    reg [2:0] EX_cond;
+    reg EX_BR_enable;
     reg EX_we, EX_wer;                                          // DREQ가 될 녀적, IREQ가 될 녀적   (write enalbe / write enable reg)
 
     /////////////////EX_MEM/////////////////
     reg [4:0] XM_op, XM_ra;												// opcode 5bit _ dest reg add
     reg [31:0] XM_aluout, XM_rv1, XM_rv2, XM_instr;							// alu EX_ALU_out _ ID_valA _ ID_valB _ 명령어
-    reg [29:0] XM_iaddr;                                        // IF_instr add (PC) => DADDR
     reg XM_we, XM_wer, XM_csn;
 
     /////////////////MEM_WB/////////////////
     reg [4:0] MW_op, MW_ra;                                     // opcode 5bit _ dest reg add
     reg [31:0] MW_aluout, MW_rv1, MW_rv2, MW_instr, WB_instr;   // alu EX_ALU_out _ ID_valA _ ID_valB _ 어떤 계산 _ 어떤 계산
-    reg [29:0] MW_iaddr;                                        // P
     reg MW_wer, MW_we;  // 계산 결과 이어받음 이것이 mem에 연결되서 wer에서 enable되면 reg에 저장하고 we에서 enable되면 mem에 저장
 
 
