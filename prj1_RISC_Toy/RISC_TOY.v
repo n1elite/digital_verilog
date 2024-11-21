@@ -72,8 +72,8 @@ module RISC_TOY (
     reg [31:0] ID_valA, ID_valB;
 
 	/////////////////ID_EX/////////////////
-	reg [31:0] ALU_out;
-	reg [31:0] ALU_PC;
+    reg [31:0] ALU_out;
+    reg [31:0] ALU_PC;
 
 	//cond
 
@@ -99,8 +99,8 @@ module RISC_TOY (
     reg MW_wer, MW_we;  // 계산 결과 이어받음 이것이 mem에 연결되서 wer에서 enable되면 reg에 저장하고 we에서 enable되면 mem에 저장
 
 
-	/////////////////PC_reg/////////////////
-	reg [31:0] PC;  // Program Counter
+    /////////////////PC_reg/////////////////
+    reg [31:0] PC;  // Program Counter
 
 
     // REGISTER FILE FOR GENRAL PURPOSE REGISTERS
@@ -139,18 +139,17 @@ module RISC_TOY (
 
 
 	assign FI_read_address0 = 
-    	(IF_op == `ADDI || IF_op == `ANDI || IF_op == `ORI || IF_op == `LD || 
-    	 IF_op == `ST || IF_op == `MOVI || IF_op == `NEG || IF_op == `NOT) ? IF_instr[26:22] :
-    	(IF_op == `ADD || IF_op == `SUB || IF_op == `AND || IF_op == `OR || 
-    	 IF_op == `XOR || IF_op == `LSR || IF_op == `ASR || IF_op == `SHL || 
-    	 IF_op == `ROR || IF_op == `BR || IF_op == `BRL) ? IF_instr[21:17] : 0;
+    		(IF_op == `ADDI || IF_op == `ANDI || IF_op == `ORI || IF_op == `LD || 
+    	 	IF_op == `ST || IF_op == `MOVI || IF_op == `NEG || IF_op == `NOT) ? IF_instr[26:22] :
+    		(IF_op == `ADD || IF_op == `SUB || IF_op == `AND || IF_op == `OR || 
+    	 	IF_op == `XOR || IF_op == `LSR || IF_op == `ASR || IF_op == `SHL || 
+    	 	IF_op == `ROR || IF_op == `BR || IF_op == `BRL) ? IF_instr[21:17] : 0;
 
 	assign FI_read_address1 = 
-	    (IF_op == `ADDI || IF_op == `ANDI || IF_op == `ORI || IF_op == `LD || IF_op == `ST) ? IF_instr[21:17] :
-    	(IF_op == `ADD || IF_op == `SUB || IF_op == `AND || IF_op == `OR || IF_op == `XOR || 
-    	 IF_op == `NEG || IF_op == `NOT || IF_op == `BR || IF_op == `BRL) ? IF_instr[16:12] :
-    	((IF_op == `LSR || IF_op == `ASR || IF_op == `SHL || IF_op == `ROR) && IF_instr[5]) ? IF_instr[16:12] :
-    	IF_instr[4:0];
+	    	(IF_op == `ADDI || IF_op == `ANDI || IF_op == `ORI || IF_op == `LD || IF_op == `ST) ? IF_instr[21:17] :
+    		(IF_op == `ADD || IF_op == `SUB || IF_op == `AND || IF_op == `OR || IF_op == `XOR || 
+    	 	IF_op == `NEG || IF_op == `NOT || IF_op == `BR || IF_op == `BRL) ? IF_instr[16:12] :
+		((IF_op == `LSR || IF_op == `ASR || IF_op == `SHL || IF_op == `ROR) && IF_instr[5]) ? IF_instr[16:12] : IF_instr[4:0];
 
 
 
