@@ -383,9 +383,6 @@ module RISC_TOY (
             XM_instr <= EX_instr;
 	    XM_csn <= (EX_op == `ST || EX_op == `STR || EX_op == `LD || EX_op == `LDR) ? 1 : 0;
 	    XM_we <= (EX_op == `ST || EX_op == `STR) ? 1 : 0; // 메모리 쓰기/읽기 신호
-	    XM_wer <= (EX_op != `ST && EX_op != `STR && EX_op != `LD && EX_op != `STR && EX_op != `STR && EX_op != `STR
-		      && EX_op != `STR) ?
-		1 : 0; // 레지스터 기록 신호
         end
     end
 
