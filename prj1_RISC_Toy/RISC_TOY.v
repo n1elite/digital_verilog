@@ -120,7 +120,6 @@ module RISC_TOY (
 	assign PC = (EX_PC_F == 0) ? IF_iaddr :	EX_iaddr - 4;
 
     /////////////////IF/////////////////
-    reg stall;
 
 // 스톨 조건 및 해제
     always @(posedge CLK or negedge RSTN) begin
@@ -143,7 +142,7 @@ module RISC_TOY (
             IF_instr <= 0;
 	    IF_iaddr <= 0;
 	    PC <= 0;
-	else if(!stall) begin
+	end else if (!stall) begin
             IF_op <= INSTR[31:27];
             IF_instr <= INSTR;
 	    IF_iaddr <= PC + 4;
@@ -397,7 +396,7 @@ module RISC_TOY (
 			EX_PC_F <= 0;
 		end else if (stall)
 			EX_op <= 5'b00000;
-		end else begin
+		else begin
 			EX_dest <= ID_dest;
 			EX_op <= ID_op;
 			EX_ALU_out <= ALU_out;
