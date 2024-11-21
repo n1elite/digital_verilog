@@ -96,8 +96,7 @@ module RISC_TOY (
 	reg [4:0] WI;
 	reg [31:0] DI;
 
-    /////////////////PC_reg/////////////////
-    reg [31:0] PC;  // Program Counter
+
 
 
     // REGISTER FILE FOR GENRAL PURPOSE REGISTERS
@@ -114,6 +113,11 @@ module RISC_TOY (
     );
 
 
+	
+    /////////////////PC/////////////////
+    wire [29:0] PC;  // Program Counter
+    assign PC = (EX_PC_F == 0) ? IF_iaddr :	EX_iaddr - 1;
+
     /////////////////IF/////////////////
     always @(posedge CLK or negedge RSTN) begin
         if(~RSTN) begin
@@ -124,7 +128,7 @@ module RISC_TOY (
         else begin
             IF_op <= INSTR[31:27];
             IF_instr <= INSTR;
-			IF_iaddr <= PC;
+	    IF_iaddr <= PC + 1;
         end
         
     end
@@ -215,6 +219,44 @@ module RISC_TOY (
 
 
 	/////////////////ID_EX/////////////////
+	assign ALU_out = (ID_op == `ADDI) ? ID_valB + ID_imm :
+                 	 (ID_op == `ANDI) ? ID_valB & ID_imm :
+                	 (ID_op == `ORI)  ? ID_valB | ID_imm :
+                	 (ID_op == `MOVI) ? ID_imm :
+                	 (ID_op == `ADD)  ? ID_valA + ID_valB :
+                	 (ID_op == `SUB)  ? ID_valA - ID_valB :
+                	 (ID_op == `NEG)  ? -ID_valB :
+                	 (ID_op == `NOT)  ? ~ID_valB :
+                	 (ID_op == `AND)  ? ID_valA & ID_valB :
+                	 (ID_op == `OR)   ? ID_valA | ID_valB :
+                	 (ID_op == `XOR)  ? ID_valA ^ ID_valB :
+                	 (ID_op == `LSR)  ? ID_valA >> ID_valB[4:0] :
+                	 (ID_op == `ASR)  ? ID_valA >>> ID_valB[4:0] :
+                	 (ID_op == `SHL)  ? ID_valA << ID_valB[4:0] :
+                	 (ID_op == `ROR)  ? (ID_valA >> ID_valB[4:0]) | (ID_valA << (32 - ID_valB[4:0])) :
+                	 (ID_op == `BRL)  ? {ID_iaddr, 2'b0} :
+                	 (ID_op == `JL)   ? {ID_iaddr, 2'b0} :
+                	 (ID_op == `LD && ID_valB == 5'b11111) ? {15'b0, ID_imm[16:0]} :
+                	 (ID_op == `LD) ? ID_imm + ID_valB :
+                	 (ID_op == `LDR) ? {ID_iaddr, 2'b0} + ID_imm :
+                	 (ID_op == `ST && ID_valA == 5'b11111) ? {15'b0, ID_imm[16:0]} :
+                	 (ID_op == `ST) ? ID_imm + ID_valB :
+                	 (ID_op == `STR) ? {ID_iaddr, 2'b0} + ID_imm : 0;
+
+	assign ALU_PC = (ID_op == `BR && ID_instr[2:0] == 1) ? ID_valA :
+                	(ID_op == `BR && ID_instr[2:0] == 2 && ID_valB == 0) ? ID_valA :
+                	(ID_op == `BR && ID_instr[2:0] == 3 && ID_valB != 0) ? ID_valA :
+                	(ID_op == `BR && ID_instr[2:0] == 4 && ID_valB >= 0) ? ID_valA :
+                	(ID_op == `BR && ID_instr[2:0] == 5 && ID_valB < 0) ? ID_valA :
+                	(ID_op == `BRL && ID_instr[2:0] == 1) ? ID_valA :
+                	(ID_op == `BRL && ID_instr[2:0] == 2 && ID_valB == 0) ? ID_valA :
+                	(ID_op == `BRL && ID_instr[2:0] == 3 && ID_valB != 0) ? ID_valA :
+                	(ID_op == `BRL && ID_instr[2:0] == 4 && ID_valB >= 0) ? ID_valA :
+                	(ID_op == `BRL && ID_instr[2:0] == 5 && ID_valB < 0) ? ID_valA :
+                	(ID_op == `J) ? {ID_iaddr, 2'b0} + ID_imm :
+                	(ID_op == `JL) ? {ID_iaddr, 2'b0} + ID_imm : 0;
+	assign
+/*	
 	always @(*) begin
     	case (ID_op)
         	// Immediate 연산
@@ -324,7 +366,7 @@ module RISC_TOY (
 		endcase			
 	end      
 
-
+*/
 	always @(posedge CLK or negedge RSTN) begin
 		if(!RSTN) begin
 			EX_dest <= 0;
@@ -345,13 +387,16 @@ module RISC_TOY (
             		EX_instr <= ID_instr;
 			EX_csn <= (ID_op == `ST || ID_op == `STR || ID_op == `LD || ID_op == `LDR) ? 1 : 0;
 			EX_we <= (ID_op == `ST || ID_op == `STR) ? 1 : 0; // 메모리 쓰기/읽기 신호
-		if (ID_op == `BR || ID_op == `BRL || ID_op == `J || ID_op == `JL)	begin
-			EX_iaddr <= ALU_PC;
-		end else begin
-			EX_iaddr <= ID_iaddr;
+			if (ID_op == `BR || ID_op == `BRL || ID_op == `J || ID_op == `JL)	begin
+				EX_iaddr <= ALU_PC[31:2];
+				EX_PC_F <= 1;
+			end	else begin
+				EX_iaddr <= ID_iaddr;
+				EX_PC_F <= 0;
+			end
 		end
 	end
-	end
+	
 	assign DREQ = EX_csn;
     	assign DRW = EX_we;
     	assign DADDR = EX_ALU_out[31:2];
