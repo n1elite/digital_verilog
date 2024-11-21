@@ -61,7 +61,7 @@ module RISC_TOY (
     /////////////////IF_ID/////////////////
     wire [4:0] FI_read_address0, FI_read_address1;
     wire [31:0] read_data0, read_data1;
-
+	reg [31:0] stall_instr;
 
 	/////////////////ID/////////////////
     reg [4:0] ID_dest;      
@@ -132,6 +132,7 @@ module RISC_TOY (
             		stall <= 1; // 스톨 활성화
         	end else begin
             		stall <= 0; // 스톨 해제
+			stall_instr <= 0;
         	end
     	end
 	end
@@ -230,7 +231,9 @@ module RISC_TOY (
 					ID_dest <= IF_instr[26:22]; //ra
 				end
 			endcase
-		end
+		end else if(stall)
+			stall_instr <= IF_instr;
+	    		ID_instr <= stall_instr;
 	end
 
 
