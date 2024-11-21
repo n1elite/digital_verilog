@@ -377,7 +377,6 @@ module RISC_TOY (
             XM_rv1 <= 0;
             XM_rv2 <= 0;
             XM_instr <= 0;
-            XM_iaddr <= 0;
             XM_we <= 0;
             XM_wer <= 0;
         end else begin
@@ -387,7 +386,6 @@ module RISC_TOY (
             XM_rv1 <= EX_valB;
             XM_rv2 <= EX_valA;
             XM_instr <= EX_instr;
-            XM_iaddr <= EX_iaddr;
 	    XM_csn <= (EX_op == `ST || EX_op == `STR || EX_op == `LD || EX_op == `LDR) ? 1 : 0;
 	    XM_we <= (EX_op == `ST || EX_op == `STR) ? 1 : 0; // 메모리 쓰기/읽기 신호
 	    XM_wer <= (EX_op != `ST && EX_op != `STR && EX_op != `BR && EX_op != `BRL) ? 1 : 0; // 레지스터 기록 신호
@@ -408,7 +406,6 @@ module RISC_TOY (
             MW_rv1 <= 0;
             MW_rv2 <= 0;
             MW_instr <= 0;
-            MW_iaddr <= 0;
             MW_wer <= 0;
             MW_we <= 0;
         end else begin
@@ -418,7 +415,6 @@ module RISC_TOY (
             MW_rv1 <= XM_rv1;
             MW_rv2 <= XM_rv2;
             MW_instr <= XM_instr;
-            MW_iaddr <= XM_iaddr;
             MW_wer <= XM_wer;
             MW_we <= XM_we;
         end
