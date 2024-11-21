@@ -143,17 +143,17 @@ module RISC_TOY (
             IF_instr <= 0;
 	    IF_iaddr <= 0;
 	    PC <= 0;
-	end else if (!stall) begin
+	end else if (!stall && IREQ) begin
             IF_op <= INSTR[31:27];
             IF_instr <= INSTR;
 	    IF_iaddr <= PC + 4;
-        end  else if(stall) begin
-	    		IF_instr <= stall_instr;
+      /*  end  else if(stall && !IREQ) begin
 			stall_instr <= INSTR;
+	    		IF_instr <= stall_instr; */
 		end
      end
 
-	assign IREQ = 1;
+	assign IREQ = (stall) ? 0 : 1;
 	assign IADDR = IF_iaddr;
 
     /////////////////IF_ID/////////////////
