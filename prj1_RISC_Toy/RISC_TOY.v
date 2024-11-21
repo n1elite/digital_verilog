@@ -91,7 +91,7 @@ module RISC_TOY (
 
     /////////////////MEM_WB/////////////////
 	reg [4:0] XM_op, XM_ra;                                     // opcode 5bit _ dest reg add
-	reg [31:0] XM_aluout, XM_memoryout, XM_instr, XM_instr;   // alu EX_ALU_out _ ID_valA _ ID_valB _ 어떤 계산 _ 어떤 계산
+	reg [31:0] XM_aluout, XM_memoryout, XM_instr;   // alu EX_ALU_out _ ID_valA _ ID_valB _ 어떤 계산 _ 어떤 계산
 	reg WEN;
 	reg [4:0] WI;
 	reg [31:0] DI;
@@ -387,11 +387,9 @@ module RISC_TOY (
             XM_instr <= EX_instr;
         end
     end
-	assign WEN = (EX_op == J) ? 0 : 1;
+	assign WEN = (EX_op == `J) ? 0 : 1;
 	assign WA = EX_dest;
 	assign DI = (EX_op == `LD || EX_op == `LDR) ? XM_memoryout : XM_aluout;
-
-    assign 
 
 
 
