@@ -275,19 +275,18 @@ always @(posedge CLK or negedge RSTN) begin
 end
 
 
-    // REGISTER FILE FOR GENRAL PURPOSE REGISTERS
-    REGFILE    #(.AW(5), .ENTRY(32))    RegFile (
-                    .CLK    (CLK),
-                    .RSTN   (RSTN),
-                    .WEN    (),
-                    .WA     (),
-                    .DI     (),
-                    .RA0    (),
-                    .RA1    (),
-                    .DOUT0  (),
-                    .DOUT1  ()
-    );
-
+// REGISTER FILE FOR GENERAL PURPOSE REGISTERS
+REGFILE    #(.AW(5), .ENTRY(32))    RegFile (
+                .CLK    (CLK),
+                .RSTN   (RSTN),
+                .WEN    (MW_wer || MW_we),   // Write Enable: 메모리 읽기(wer)나 ALU 연산 결과(we)일 때 활성화
+                .WA     (MW_ra),             // Write Address: 목적지 레지스터 주소
+                .DI     (MW_aluout),  // ALU 결과??
+                .RA0    (FI_read_address0),  // Read Address 0: 소스 레지스터 주소 0
+                .RA1    (FI_read_address1),  // Read Address 1: 소스 레지스터 주소 1
+                .DOUT0  (read_data0),        // Read Data 0: 읽은 레지스터 값 0
+                .DOUT1  (read_data1)         // Read Data 1: 읽은 레지스터 값 1
+);
 
     // WRITE YOUR CODE
 
