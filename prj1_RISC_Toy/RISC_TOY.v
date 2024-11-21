@@ -1,99 +1,21 @@
-/*****************************************
-    
-    Team XX : 
-        2024000000    Kim Mina
-        2024000001    Lee Minho
-*****************************************/
+/*
+    ASYNCHRONOUS READ SYNCHRONOUS WRITE REGISTER FILE MODEL
+   
+    FUNCTION TABLE:
 
+    CLK        WEN        WA        DI        COMMENT
+    ===================================================
+    posedge    H          X         X         WRITE STANDBY
+    posedge    L          VALID     VALID     WRITE
+ 
+    CLK        RA                   DOUT      COMMENT
+    ===================================================
+    X          VALID                MEM(RA)   READ
 
-// You are able to add additional modules and instantiate in RISC_TOY.
-
-
-////////////////////////////////////
-//  TOP MODULE
-////////////////////////////////////
-module RISC_TOY (
-    input     wire              CLK,
-    input     wire              RSTN,
-    output    wire              IREQ,
-    output    wire    [29:0]    IADDR,
-    input     wire    [31:0]    INSTR,
-    output    wire              DREQ,
-    output    wire              DRW,
-    output    wire    [29:0]    DADDR,
-    output    wire    [31:0]    DWDATA,
-    input     wire    [31:0]    DRDATA
-);
-
-
-    // WRITE YOUR CODE
-
-
-
-	
-    /////////////////IF/////////////////
-    reg [31:0] IF_instr;
-    reg [29:0] IF_iaddr;
-    reg [4:0] IF_op;
-
-    /////////////////IF_ID/////////////////
-    reg [4:0] FI_read_address0, FI_read_address1, FI_dest;      
-    reg [4:0] FI_op; 
-    reg [31:0] FI_instr;                                        // 명령어
-    reg [29:0] FI_iaddr;                                        // 명령어 add
-    reg [31:0] FI_imm;
-    reg [31:0] FI_valA, FI_valB;
-
-    /////////////////ID_EX/////////////////
-    reg [4:0] DE_read_address0, DE_read_address1 DE_dest;        // rega add _ regb add _ regc add _ opcode
-    reg [4:0] DE_op; 
-    reg [31:0] DE_valA, DE_valB, DE_imm;                          // FI_valA _ FI_valB _ FI_imm 
-    reg [31:0] DE_instr;                                        // 명령어
-	reg [29:0] DE_iaddr;                                        // 명령어 add
-
-    
-    reg DE_we, DE_wer;                                          // DREQ가 될 녀석, IREQ가 될 녀석   (write enalbe / write enable reg)
-    
-
-    /////////////////EX_MEM/////////////////
-
-    reg [4:0] XM_op, XM_ra;                                     // opcode 5bit _ dest reg add
-    reg [31:0] XM_aluout, XM_rv1, XM_rv2, XM_instr;             // alu result _ FI_valA _ FI_valB _ 명령어
-    reg [29:0] XM_iaddr;                                        // IF_instr add (PC) => DADDR
-
-    reg XM_we, XM_wer;
-
-    /////////////////MEM_WB/////////////////
-
-    reg [4:0] MW_op, MW_ra;                                     // opcode 5bit _ dest reg add
-    reg [31:0] MW_aluout, MW_rv1, MW_rv2, MW_instr, WB_instr;   // alu result _ FI_valA _ FI_valB _ 어떤 계산 _ 어떤 계산
-    reg [29:0] MW_iaddr;                                        // P
-    reg MW_wer, MW_we;  // 계산 결과 이어받음 이게 mem에 연결되서 wer에서 enable되면 reg에 저장하고 we에서 enable되면 mem에 저장
-
-
-
-
-
-    reg [31:0] PC;  // Program Counter
-    reg [31:0] next_PC;
-
-    always @(posedge CLK or negedge RSTN) begin
-       	if (!RSTN) begin
-           		PC <= 0; // Reset Program Counter
-		IF_instr <= 0;
-       	end else begin
-           		PC <= next_PC; // Update Program Counter
-		IF_instr <= INSTR;
-       	end
-    end
-
-
-
-
-    // REGISTER FILE FOR GENRAL PURPOSE REGISTERS
+    USAGE:
     REGFILE    #(.AW(5), .ENTRY(32))    RegFile (
                     .CLK    (CLK),
-                    .RSTN   (RSTN),
+                    .RSTN    (RSTN),
                     .WEN    (),
                     .WA     (),
                     .DI     (),
@@ -102,173 +24,107 @@ module RISC_TOY (
                     .DOUT0  (),
                     .DOUT1  ()
     );
+*/
 
+module REGFILE #(parameter AW = 5, ENTRY = 32) (
+    input    wire                CLK, 
+    input    wire                RSTN,	 // RESET (ACTIVE LOW)
 
+    // WRITE PORT
+    input    wire                WEN,    // WRITE ENABLE (ACTIVE LOW)
+    input    wire    [AW-1:0]    WA,     // WRITE ADDRESS
+    input    wire    [31:0]      DI,     // DATA INPUT
 
+    // READ PORT
+    input    wire    [AW-1:0]    RA0,    // READ ADDRESS 0
+    input    wire    [AW-1:0]    RA1,    // READ ADDRESS 1
+    output   wire    [31:0]      DOUT0,  // DATA OUTPUT 0
+    output   wire    [31:0]      DOUT1   // DATA OUTPUT 1
+);
 
+    parameter    ATIME    = 1;			//READ DELAY
 
-    // WRITE YOUR CODE
+    reg        [31:0]        ram[0:ENTRY-1];
 
-    /////////////////IF/////////////////
-    always @(posedge CLK or negedge RSTN) begin
-        if(~RSTN) begin
-            IF_op <= 0;
-            IF_instr <= 0;
+    always @ (posedge CLK or negedge RSTN)
+    begin
+        if(~RSTN)
+        begin
+            ram[0] <= 32'b0; ram[1] <= 32'b0; ram[2] <= 32'b0; ram[3] <= 32'b0;
+            ram[4] <= 32'b0; ram[5] <= 32'b0; ram[6] <= 32'b0; ram[7] <= 32'b0;
+            ram[8] <= 32'b0; ram[9] <= 32'b0; ram[10] <= 32'b0; ram[11] <= 32'b0;
+            ram[12] <= 32'b0; ram[13] <= 32'b0; ram[14] <= 32'b0; ram[15] <= 32'b0;
+            ram[16] <= 32'b0; ram[17] <= 32'b0; ram[18] <= 32'b0; ram[19] <= 32'b0;
+            ram[20] <= 32'b0; ram[21] <= 32'b0; ram[22] <= 32'b0; ram[23] <= 32'b0;
+            ram[24] <= 32'b0; ram[25] <= 32'b0; ram[26] <= 32'b0; ram[27] <= 32'b0;
+            ram[28] <= 32'b0; ram[29] <= 32'b0; ram[30] <= 32'b0; ram[31] <= 32'b0;
         end
-        else begin
-            IF_op <= INSTR[31:27];
-            IF_instr <= INSTR;
+        else
+        begin
+            if (~WEN)    ram[WA] <= DI;		//SYNCHRONOUS WRITE WITH NO DELAY
         end
-        
     end
 
-    /////////////////IF_ID/////////////////
+    assign    #(ATIM
+E)    DOUT0    = ram[RA0]; //클락에 물리지 않고 바로 불러오는 상황(asynchronous)
+    assign    #(ATIME)    DOUT1    = ram[RA1];
 
-	wire ADDI = (IF_op == 5'b00000);
-	wire ANDI = (IF_op == 5'b00001);
-	wire ORI = (IF_op == 5'b00010);
-	wire MOVI = (IF_op == 5'b00011);
-	wire ADD = (IF_op == 5'b00100);
-	wire SUB = (IF_op == 5'b00101);
-	wire NEG = (IF_op == 5'b00110);
-	wire NOT = (IF_op == 5'b00111);
-	wire AND = (IF_op == 5'b01000);
-	wire OR = (IF_op == 5'b01001);
-	wire XOR = (IF_op == 5'b01010);
-	wire LSR = (IF_op == 5'b01011);
-	wire ASR = (IF_op == 5'b01100);
-	wire SHL = (IF_op == 5'b01101);
-	wire ROR = (IF_op == 5'b01110);
-	wire BR = (IF_op == 5'b01111);
-	wire BRL = (IF_op == 5'b10000);
-	wire J = (IF_op == 5'b10001);
-	wire JL = (IF_op == 5'b10010);
-	wire LD = (IF_op == 5'b10011);
-	wire LDR = (IF_op == 5'b10100);
-	wire ST = (IF_op == 5'b10101);
-	wire STR = (IF_op == 5'b10110);
-
-
-	wire [31:0] read_data0, read_data1;
-
-
-    always @(posedge CLK or negedge RSTN) begin
-		if(!RSTN) begin
-			FI_read_address0 <= 0;
-			FI_read_address1 <= 0;
-			FI_valA <= 0;
-			FI_valB <= 0;
-			FI_imm <= 0;
-			FI_dest <= 0;
-            FI_iaddr <= 0;
-            FI_instr <= 0;
-            FI_op <= 0;
-			PC <= 0;
-		end else begin 
-            FI_iaddr <= IF_iaddr;
-            FI_instr <= IF_instr;
-            FI_op <= IF_op;
-			if(ADDI || ANDI || ORI || LD || ST) begin //MOVI 주의
-				FI_read_address0 <= IF_instr[26:22]; //ra
-				FI_read_address1 <= IF_instr[21:17]; //rb
-				FI_valA <= read_data1;//R[ra]
-				FI_valB <= read_data0;//R[rb] 
-				FI_imm <= {15'b0, IF_instr[16:0]}; //상수
-				FI_dest <= IF_instr[26:22]; //ra
-			end else if(MOVI) begin 
-				FI_read_address0 <= IF_instr[26:22]; //ra 
-				FI_valB <= read_data1; //R[ra]
-				FI_imm <= {15'b0, IF_instr[16:0]}; //imm
-				FI_dest <= IF_instr[26:22]; //ra
-			end else if(ADD || SUB || AND || OR || XOR) begin 
-				FI_read_address0 <= IF_instr[21:17]; //rb
-				FI_read_address1 <= IF_instr[16:12]; //rc
-				FI_valA <= read_data0; //R[rb]
-				FI_valB <= read_data1; //R[rc]
-				FI_imm <= {15'b0, IF_instr[26:22]}; //ra
-				FI_dest <= IF_instr[26:22]; //ra
-			end else if(NEG || NOT) begin 
-				FI_read_address0 <= IF_instr[26:22]; //ra
-				FI_read_address1 <= IF_instr[16:12]; //rc
-				FI_valA <= read_data1; //R[rc] 
-				FI_valB <= read_data0; //R[ra]
-				FI_imm <= {15'b0, IF_instr[26:22]}; //ra 
-				FI_dest <= IF_instr[26:22]; //ra
-			end else if(LSR || ASR || SHL || ROR) begin 
-				FI_read_address0 <= IF_instr[21:17]; //rb
-					if (IF_instr[5] == 0)
-						FI_valB <= IF_instr[4:0]; //shamt
-					else begin
-						FI_read_address1 <= IF_instr[16:12]; //rc
-						FI_valB <= read_data1; //R[rc]
-					end
-				FI_valA <= read_data0; //R[rb]  
-				FI_imm <= IF_instr[26:22]; //ra
-				FI_dest <= IF_instr[26:22]; //ra
-			end else if(BR) begin 
-				FI_read_address0 <= IF_instr[21:17]; //rb
-				FI_read_address1 <= IF_instr[16:12]; //rc
-				FI_valA <= read_data0; //R[rb]
-				FI_valB <= read_data1; //R[rc]
-				FI_imm <= IF_instr[2:0]; //cond
-			end else if(BRL) begin 
-				FI_read_address0 <= IF_instr[21:17]; //rb
-				FI_read_address1 <= IF_instr[16:12]; //rc
-				FI_valA <= read_data0; //R[rb]
-				FI_valB <= read_data1; //R[rc]
-				FI_imm <= IF_instr[2:0]; //cond 
-				FI_dest <= IF_instr[26:22];
-			end else if(JL || LDR || STR) begin 
-				FI_valA <= PC; // 현재 PC
-				FI_imm <= IF_instr[21:0]; //imm
-				FI_dest <= IF_instr[26:22]; //ra
-			end else if(J) begin 
-				FI_valA <= PC; // 현재 PC
-				FI_imm <= IF_instr[21:0]; //imm
-			end
-		end
-	end
+endmodule
 
 
 
 
+/*
+    SINGLE-PORT SYNCHRONOUS MEMORY MODEL
 
+    FUNCTION TABLE:
 
+    CLK        CSN      WEN      A        DI       DOUT        COMMENT
+    ======================================================================
+    posedge    H        X        X        X        DOUT(t-1)   DESELECTED
+    posedge    L        L        VALID    VALID    DOUT(t-1)   WRITE CYCLE
+    posedge    L        H        VALID    X        MEM(A)      READ CYCLE
 
+    USAGE:
 
+    SRAM    #(.BW(32), .AW(10), .ENTRY(1024)) InstMemory (
+                    .CLK    (CLK),
+                    .CSN    (1'b0),
+                    .A      (),
+                    .WEN    (),
+                    .DI     (),
+                    .DOUT   ()
+    );
+*/
 
+module SRAM #(parameter BW = 32, AW = 10, ENTRY = 1024, WRITE = 0, MEM_FILE="mem.hex") (
+    input    wire                CLK,
+    input    wire                CSN,    // CHIP SELECT (ACTIVE LOW)
+    input    wire    [AW-1:0]    A,      // ADDRESS
+    input    wire                WEN,    // READ/WRITE ENABLE
+    input    wire    [BW-1:0]    DI,     // DATA INPUT
+    output   wire    [BW-1:0]    DOUT    // DATA OUTPUT
+);
 
+    parameter    ATIME    = 2;
 
+    reg        [BW-1:0]    ram[0:ENTRY-1];
+    reg        [BW-1:0]    outline;
 
-
-
-
-
-
-
-
-
-
-
-
-/////////////////////////////clock 여기 변수 수정해야 됨
-
-    always @(posedge CLK or negedge RSTN) begin
-         	if (!RSTN) begin
-              		next_PC = 0;
-           	end else if (J || JL) begin
-    		next_PC = PC + FI_imm; // Jump with FI_imm
-           	end else if (BR || BRL) begin
-    		if (FI_valA == FI_valB) begin  // ALU에서 비교한 리턴값 보내주면 조건 대체
-            	next_PC = read_data0; // Branch if condition is met
-            end else begin
-           		next_PC = PC + 4; // Increment to next IF_instr
-           	end
-       	end else begin
-        	next_PC = PC + 4; // Default: increment by 4 (next IF_instr)
-       	end
+    initial begin
+	    if(WRITE>0)
+		    $readmemh(MEM_FILE, ram);
     end
 
+    always @ (posedge CLK)
+    begin
+        if (~CSN)
+        begin
+            if (WEN)    outline    <= ram[A];
+            else        ram[A]    <= DI;
+        end
+    end
 
+    assign    #(ATIME)    DOUT    = outline; //메모리 자체 딜레이를 지정함 (읽고 쓰는데)
 
 endmodule
