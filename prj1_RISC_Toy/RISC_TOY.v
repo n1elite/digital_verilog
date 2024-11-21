@@ -379,7 +379,7 @@ module RISC_TOY (
             XM_op <= EX_op;
             XM_ra <= EX_dest;
             XM_aluout <= EX_ALU_out;
-            XM_memoryout <= DRDATA;
+	    XM_memoryout <= (EX_op == `LD || EX_op == `LDR) ? DRDATA : 0;
             XM_instr <= EX_instr;
 	    XM_csn <= (EX_op == `ST || EX_op == `STR || EX_op == `LD || EX_op == `LDR) ? 1 : 0;
 	    XM_we <= (EX_op == `ST || EX_op == `STR) ? 1 : 0; // 메모리 쓰기/읽기 신호
@@ -392,7 +392,7 @@ module RISC_TOY (
     assign DREQ = XM_csn;
     assign DRW = XM_we;
     assign DADDR = XM_aluout[31:2];
-	assign DWDATA = (`LD || `LDR) ? (DRDATA) : XM_aluout; 
+	assign DWDATA = (EX_op == `LD || EX_op == `LDR) ? (XM_memoryout) : XM_aluout; 
 
     /////////////////MEM_WB/////////////////
     always @(posedge CLK or negedge RSTN) begin
