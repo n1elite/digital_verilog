@@ -81,18 +81,17 @@ module RISC_TOY (
     /////////////////EX/////////////////
     reg [4:0] EX_dest;        											// rega add _ regb add _ regc add _ opcode
     reg [4:0] EX_op; 
-    reg [31:0] EX_ALU_out, EX_valA, EX_valB, EX_imm;                          // ID_valA _ ID_valB _ ID_imm 
+    reg [31:0] EX_ALU_out, EX_valB, EX_imm;                          // ID_valA _ ID_valB _ ID_imm 
     reg [31:0] EX_instr;                                        // 명령어
     reg [29:0] EX_iaddr;                                        // 명령어 add
     reg [2:0] EX_cond;
     reg EX_BR_enable;
-    reg EX_we, EX_wer;                                          // DREQ가 될 녀적, IREQ가 될 녀적   (write enalbe / write enable reg)
+    reg EX_csn, EX_we;                                         
 
 
     /////////////////MEM_WB/////////////////
 	reg [4:0] XM_op, XM_ra;                                     // opcode 5bit _ dest reg add
 	reg [31:0] XM_aluout, XM_memoryout, XM_instr, XM_instr;   // alu EX_ALU_out _ ID_valA _ ID_valB _ 어떤 계산 _ 어떤 계산
-        reg XM_wer, XM_we;  // 계산 결과 이어받음 이것이 mem에 연결되서 wer에서 enable되면 reg에 저장하고 we에서 enable되면 mem에 저장
 	reg WEN;
 	reg [4:0] WI;
 	reg [31:0] DI;
