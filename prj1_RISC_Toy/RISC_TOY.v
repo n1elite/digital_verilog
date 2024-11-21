@@ -85,6 +85,7 @@ module RISC_TOY (
     reg [31:0] EX_instr;                                        // 명령어
     reg [29:0] EX_iaddr;                                        // 명령어 add
     reg [2:0] EX_cond;
+    reg EX_PC_F;
     reg EX_BR_enable;
     reg EX_csn, EX_we;                                         
 
@@ -255,7 +256,6 @@ module RISC_TOY (
                 	(ID_op == `BRL && ID_instr[2:0] == 5 && ID_valB < 0) ? ID_valA :
                 	(ID_op == `J) ? {ID_iaddr, 2'b0} + ID_imm :
                 	(ID_op == `JL) ? {ID_iaddr, 2'b0} + ID_imm : 0;
-	assign
 /*	
 	always @(*) begin
     	case (ID_op)
