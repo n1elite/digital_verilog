@@ -88,14 +88,10 @@ module RISC_TOY (
     reg EX_BR_enable;
     reg EX_we, EX_wer;                                          // DREQ가 될 녀적, IREQ가 될 녀적   (write enalbe / write enable reg)
 
-    /////////////////EX_MEM/////////////////
-    reg [4:0] XM_op, XM_ra;												// opcode 5bit _ dest reg add
-    reg [31:0] XM_aluout, XM_rv1, XM_rv2, XM_instr;							// alu EX_ALU_out _ ID_valA _ ID_valB _ 명령어
-    reg XM_we, XM_wer, XM_csn;
 
     /////////////////MEM_WB/////////////////
     reg [4:0] MW_op, MW_ra;                                     // opcode 5bit _ dest reg add
-    reg [31:0] MW_aluout, MW_rv1, MW_rv2, MW_instr, WB_instr;   // alu EX_ALU_out _ ID_valA _ ID_valB _ 어떤 계산 _ 어떤 계산
+    reg [31:0] MW_aluout, MW_memoryout, MW_instr, WB_instr;   // alu EX_ALU_out _ ID_valA _ ID_valB _ 어떤 계산 _ 어떤 계산
     reg MW_wer, MW_we;  // 계산 결과 이어받음 이것이 mem에 연결되서 wer에서 enable되면 reg에 저장하고 we에서 enable되면 mem에 저장
 
 
@@ -367,7 +363,7 @@ module RISC_TOY (
 	    .DI(DWDATA),      // 데이터 입력
 	    .DOUT(DRDATA)    // 데이터 출력
     );
-
+	reg [31:0] DRDATA; 
 	
     always @(posedge CLK or negedge RSTN) begin
         if (!RSTN) begin
@@ -383,19 +379,20 @@ module RISC_TOY (
             XM_op <= EX_op;
             XM_ra <= EX_dest;
             XM_aluout <= EX_ALU_out;
-            XM_rv1 <= EX_valB;
-            XM_rv2 <= EX_valA;
+            XM_memoryout <= DRDATA;
             XM_instr <= EX_instr;
 	    XM_csn <= (EX_op == `ST || EX_op == `STR || EX_op == `LD || EX_op == `LDR) ? 1 : 0;
 	    XM_we <= (EX_op == `ST || EX_op == `STR) ? 1 : 0; // 메모리 쓰기/읽기 신호
-	    XM_wer <= (EX_op != `ST && EX_op != `STR && EX_op != `BR && EX_op != `BRL) ? 1 : 0; // 레지스터 기록 신호
+	    XM_wer <= (EX_op != `ST && EX_op != `STR && EX_op != `LD && EX_op != `STR && EX_op != `STR && EX_op != `STR
+		      && EX_op != `STR) ?
+		1 : 0; // 레지스터 기록 신호
         end
     end
 
     assign DREQ = XM_csn;
     assign DRW = XM_we;
     assign DADDR = XM_aluout[31:2];
-    assign DWDATA = XM_rv1;
+	assign DWDATA = (`LD || `LDR) ? (DRDATA) : XM_aluout; 
 
     /////////////////MEM_WB/////////////////
     always @(posedge CLK or negedge RSTN) begin
