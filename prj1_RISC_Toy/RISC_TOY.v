@@ -125,7 +125,7 @@ module RISC_TOY (
 	
     /////////////////PC/////////////////
     reg [29:0] PC;  // Program Counter
-	assign PC = (EX_PC_F == 0) ? IF_iaddr :	EX_iaddr - 4;
+    assign PC = (EX_PC_F == 0) ? IF_iaddr : EX_iaddr - 4;
 
     /////////////////IF/////////////////
 
@@ -246,7 +246,32 @@ module RISC_TOY (
 
 
 	/////////////////ID_EX/////////////////
-	assign ALU_out = (ID_op == `ADDI) ? ID_valB + ID_imm :
+	assign ALU_out = (forwardA_EX || forwardB_EX) ? ((ID_op == `ADDI) ? ALU_srcB + ID_imm :
+							 (ID_op == `ADD) ? ALU_srcA + ALU_srcB :
+							 (ID_op == `ANDI) ? ALU_srcB & ID_imm :
+							 (ID_op == `ORI)  ? ALU_srcB | ID_imm :
+                	 (ID_op == `MOVI) ? ID_imm :
+							 (ID_op == `ADD)  ? ALU_srcA + ALU_srcB :
+							 (ID_op == `SUB)  ? ALU_srcA - ALU_srcB :
+							 (ID_op == `NEG)  ? -ALU_srcB :
+							 (ID_op == `NOT)  ? ~ALU_srcB :
+							 (ID_op == `AND)  ? ALU_srcA & ALU_srcB :
+							 (ID_op == `OR)   ? ALU_srcA | ALU_srcB :
+							 (ID_op == `XOR)  ? ALU_srcA ^ ALU_srcB :
+							 (ID_op == `LSR)  ? ALU_srcA >> ALU_srcB[4:0] :
+							 (ID_op == `ASR)  ? ALU_srcA >>> ALU_srcB[4:0] :
+							 (ID_op == `SHL)  ? ALU_srcA << ALU_srcB[4:0] :
+							 (ID_op == `ROR)  ? (ALU_srcA >> ALU_srcB[4:0]) | (ALU_srcA << (32 - ALU_srcB[4:0])) :
+                	 				(ID_op == `BRL)  ? {ID_iaddr, 2'b0} :
+                	 				(ID_op == `JL)   ? {ID_iaddr, 2'b0} :
+							 (ID_op == `LD && ALU_srcB == 5'b11111) ? {15'b0, ID_imm[16:0]} :
+							 (ID_op == `LD) ? ID_imm + ALU_srcB :
+                	 (ID_op == `LDR) ? {ID_iaddr, 2'b0} + ID_imm :
+							 (ID_op == `ST && ALU_srcA == 5'b11111) ? {15'b0, ID_imm[16:0]} :
+							 (ID_op == `ST) ? ID_imm + ALU_srcB :
+							 (ID_op == `STR) ? {ID_iaddr, 2'b0} + ID_imm : 0)
+		((ID_op == `ADDI) ? ID_valB + ID_imm :
+		 (ID_op == `ADD) ? ID_valA + ID_valB :
                  	 (ID_op == `ANDI) ? ID_valB & ID_imm :
                 	 (ID_op == `ORI)  ? ID_valB | ID_imm :
                 	 (ID_op == `MOVI) ? ID_imm :
@@ -268,7 +293,7 @@ module RISC_TOY (
                 	 (ID_op == `LDR) ? {ID_iaddr, 2'b0} + ID_imm :
                 	 (ID_op == `ST && ID_valA == 5'b11111) ? {15'b0, ID_imm[16:0]} :
                 	 (ID_op == `ST) ? ID_imm + ID_valB :
-                	 (ID_op == `STR) ? {ID_iaddr, 2'b0} + ID_imm : 0;
+		 (ID_op == `STR) ? {ID_iaddr, 2'b0} + ID_imm : 0);
 
 	assign ALU_PC = (ID_op == `BR && ID_instr[2:0] == 1) ? ID_valA :
                 	(ID_op == `BR && ID_instr[2:0] == 2 && ID_valB == 0) ? ID_valA :
