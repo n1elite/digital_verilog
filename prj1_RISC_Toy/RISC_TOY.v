@@ -90,10 +90,12 @@ module RISC_TOY (
 
 
     /////////////////MEM_WB/////////////////
-    reg [4:0] MW_op, MW_ra;                                     // opcode 5bit _ dest reg add
-    reg [31:0] MW_aluout, MW_memoryout, MW_instr, WB_instr;   // alu EX_ALU_out _ ID_valA _ ID_valB _ 어떤 계산 _ 어떤 계산
-    reg MW_wer, MW_we;  // 계산 결과 이어받음 이것이 mem에 연결되서 wer에서 enable되면 reg에 저장하고 we에서 enable되면 mem에 저장
-
+	reg [4:0] XM_op, XM_ra;                                     // opcode 5bit _ dest reg add
+	reg [31:0] XM_aluout, XM_memoryout, XM_instr, XM_instr;   // alu EX_ALU_out _ ID_valA _ ID_valB _ 어떤 계산 _ 어떤 계산
+        reg XM_wer, XM_we;  // 계산 결과 이어받음 이것이 mem에 연결되서 wer에서 enable되면 reg에 저장하고 we에서 enable되면 mem에 저장
+	reg WEN;
+	reg [4:0] WI;
+	reg [31:0] DI;
 
     /////////////////PC_reg/////////////////
     reg [31:0] PC;  // Program Counter
@@ -103,9 +105,9 @@ module RISC_TOY (
     REGFILE    #(.AW(5), .ENTRY(32))    RegFile (
                     .CLK    (CLK),
                     .RSTN   (RSTN),
-                    .WEN    (MW_wer),
-                    .WA     (MW_ra),
-                    .DI     (MW_aluout),
+	    .WEN    (WEN),
+	    .WA     (WA),
+	    .DI     (DI),
                     .RA0    (FI_read_address0),
                     .RA1    (FI_read_address1),
                     .DOUT0  (read_data0),
@@ -333,6 +335,8 @@ module RISC_TOY (
 			EX_imm <= 0;
          		EX_iaddr <= 0;
             		EX_instr <= 0;
+			EX_csn <= 0;
+			EX_we <= 0;
 		end else begin
 			EX_dest <= ID_dest;
 			EX_op <= ID_op;
@@ -340,6 +344,8 @@ module RISC_TOY (
 			EX_valB <= ID_valB;
 			EX_iaddr <= ID_iaddr;
             		EX_instr <= ID_instr;
+			EX_csn <= (ID_op == `ST || ID_op == `STR || ID_op == `LD || ID_op == `LDR) ? 1 : 0;
+			EX_we <= (ID_op == `ST || ID_op == `STR) ? 1 : 0; // 메모리 쓰기/읽기 신호
 		if (ID_op == `BR || ID_op == `BRL || ID_op == `J || ID_op == `JL)	begin
 			EX_iaddr <= ALU_PC;
 		end else begin
@@ -347,7 +353,10 @@ module RISC_TOY (
 		end
 	end
 	end
-
+	assign DREQ = EX_csn;
+    	assign DRW = EX_we;
+    	assign DADDR = EX_ALU_out[31:2];
+	assign DWDATA = EX_valB;
 	/////////////////EX_MEM/////////////////
     SRAM #(
         .BW(32),           // 데이터 폭 32비트 (기본값)
@@ -363,78 +372,28 @@ module RISC_TOY (
 	    .DI(DWDATA),      // 데이터 입력
 	    .DOUT(DRDATA)    // 데이터 출력
     );
-	reg [31:0] DRDATA; 
 	
     always @(posedge CLK or negedge RSTN) begin
         if (!RSTN) begin
             XM_op <= 0;
             XM_ra <= 0;
             XM_aluout <= 0;
-            XM_rv1 <= 0;
-            XM_rv2 <= 0;
+            XM_memoryout <= 0;
             XM_instr <= 0;
-            XM_we <= 0;
-            XM_wer <= 0;
         end else begin
             XM_op <= EX_op;
             XM_ra <= EX_dest;
             XM_aluout <= EX_ALU_out;
 	    XM_memoryout <= (EX_op == `LD || EX_op == `LDR) ? DRDATA : 0;
             XM_instr <= EX_instr;
-	    XM_csn <= (EX_op == `ST || EX_op == `STR || EX_op == `LD || EX_op == `LDR) ? 1 : 0;
-	    XM_we <= (EX_op == `ST || EX_op == `STR) ? 1 : 0; // 메모리 쓰기/읽기 신호
         end
     end
+	assign WEN = (EX_op == J) ? 0 : 1;
+	assign WA = EX_dest;
+	assign DI = (EX_op == `LD || EX_op == `LDR) ? XM_memoryout : XM_aluout;
 
-    assign DREQ = XM_csn;
-    assign DRW = XM_we;
-    assign DADDR = XM_aluout[31:2];
-	assign DWDATA = (EX_op == `LD || EX_op == `LDR) ? (XM_memoryout) : XM_aluout; 
+    assign 
 
-    /////////////////MEM_WB/////////////////
-    always @(posedge CLK or negedge RSTN) begin
-        if (!RSTN) begin
-            MW_op <= 0;
-            MW_ra <= 0;
-            MW_aluout <= 0;
-            MW_rv1 <= 0;
-            MW_rv2 <= 0;
-            MW_instr <= 0;
-            MW_wer <= 0;
-            MW_we <= 0;
-        end else begin
-            MW_op <= XM_op;
-            MW_ra <= XM_ra;
-            MW_aluout <= (XM_op == `LD || XM_op == `LDR) ? DRDATA : XM_aluout;
-            MW_rv1 <= XM_rv1;
-            MW_rv2 <= XM_rv2;
-            MW_instr <= XM_instr;
-            MW_wer <= XM_wer;
-            MW_we <= XM_we;
-        end
-    end
 
-    //////////////////WRITEBACK/////////////////
-    always @(posedge CLK or negedge RSTN) begin
-        if (!RSTN) begin
-            WB_instr <= 0;
-        end else begin
-            if (MW_wer) begin
-                WB_instr <= MW_instr;
-            end
-        end
-    end
-
-    always @(posedge CLK or negedge RSTN) begin
-        if (!RSTN) begin
-            PC <= 0;
-        end else if (MW_op == `J || MW_op == `JL) begin
-            PC <= MW_iaddr + MW_aluout[29:0];
-        end else if ((MW_op == `BR || MW_op == `BRL) && EX_BR_enable) begin
-            PC <= MW_rv1[29:0];
-        end else begin
-            PC <= PC + 1;
-        end
-    end
 
 endmodule
