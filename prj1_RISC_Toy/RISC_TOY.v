@@ -379,6 +379,7 @@ module RISC_TOY (
             		EX_instr <= 0;
 			EX_csn <= 0;
 			EX_we <= 0;
+			EX_PC_F <= 0;
 		end else begin
 			EX_dest <= ID_dest;
 			EX_op <= ID_op;
