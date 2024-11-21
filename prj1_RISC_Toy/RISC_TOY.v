@@ -108,7 +108,7 @@ module RISC_TOY (
 
 
 	/////////////////PC_reg/////////////////
-    reg [29:0] PC;  // Program Counter
+	reg [31:0] PC;  // Program Counter
 
 
 
@@ -126,10 +126,6 @@ module RISC_TOY (
     );
 
 
-
-
-
-    // WRITE YOUR CODE
 
     /////////////////IF/////////////////
     always @(posedge CLK or negedge RSTN) begin
@@ -164,8 +160,6 @@ module RISC_TOY (
     	 IF_op == `NEG || IF_op == `NOT || IF_op == `BR || IF_op == `BRL) ? IF_instr[16:12] :
     	((IF_op == `LSR || IF_op == `ASR || IF_op == `SHL || IF_op == `ROR) && IF_instr[5]) ? IF_instr[16:12] :
     	IF_instr[4:0];
-
-
 
 
 
@@ -231,8 +225,6 @@ module RISC_TOY (
 			endcase
 		end
 	end
-
-
 
 
 	/////////////////ID_EX/////////////////
