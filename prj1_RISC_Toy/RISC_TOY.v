@@ -162,7 +162,27 @@ end
 endmodule
 
 
-
+///////////////// MEM ///////////////
+always @(posedge CLK or negedge RSTN) begin
+    if (!RSTN) begin
+        XM_op <= 0;
+        XM_ra <= 0;
+        XM_aluout <= 0;
+        XM_rv1 <= 0;
+        XM_rv2 <= 0;
+        XM_instr <= 0;
+        XM_iaddr <= 0;
+        XM_we <= 0;
+        XM_wer <= 0;
+    end else begin
+        XM_op <= EX_op;
+        XM_ra <= EX_dest;
+        XM_aluout <= EX_ALU_out;
+        XM_rv1 <= EX_valB;
+        XM_instr <= EX_instr;
+        XM_iaddr <= EX_iaddr;
+        
+      
 
 
 
