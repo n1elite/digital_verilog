@@ -112,7 +112,15 @@ module RISC_TOY (
                     .DOUT0  (read_data0),
                     .DOUT1  (read_data1)
     );
+   wire forwardA_EX, forwardB_EX;  // 포워딩 제어 신호
+   wire [31:0] ALU_srcA, ALU_srcB;
 
+  // EX 단계에서의 포워딩 조건
+   assign forwardA_EX = (EX_dest != 0) && (EX_dest == FI_read_address0);  // EX-to-EX 포워딩
+   assign forwardB_EX = (XM_ra != 0) && (XM_ra == FI_read_address1);
+
+   assign ALU_srcA = forwardA_EX ? EX_ALU_out : read_data0;  // EX 단계 결과를 ALU source A에 전달
+   assign ALU_srcB = forwardB_EX ? XM_aluout : read_data1; 
 
 	
     /////////////////PC/////////////////
