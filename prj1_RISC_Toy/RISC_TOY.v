@@ -116,16 +116,16 @@ module RISC_TOY (
    wire [31:0] ALU_srcA, ALU_srcB;
 
   // EX 단계에서의 포워딩 조건
-   assign forwardA_EX = (EX_dest != 0) && (EX_dest == FI_read_address0);  // EX-to-EX 포워딩
-   assign forwardB_EX = (XM_ra != 0) && (XM_ra == FI_read_address1);
+   assign forwardA_EX = (EX_dest != 0) && (EX_dest == FI_read_address0 || EX_dest == FI_read_address1);  // EX-to-EX 포워딩
+   assign forwardB_EX = ((EX_op == `LD || EX_op == `LDR) && ((EX_dest != 0) && (EX_dest == FI_read_address0))) ? 1 : 0 ;
 
-   assign ALU_srcA = forwardA_EX ? EX_ALU_out : read_data0;  // EX 단계 결과를 ALU source A에 전달
-   assign ALU_srcB = forwardB_EX ? XM_aluout : read_data1; 
+   assign ALU_srcA = forwardA_EX ? EX_ALU_out : (EX_dest == FI_read_address0) ? read_data0 : read_data1;  // EX 단계 결과를 ALU source A에 전달
+   assign ALU_srcB = forwardB_EX ? XM_aluout : (EX_dest == FI_read_address0) ? read_data0 : read_data1; 
 
 	
     /////////////////PC/////////////////
     wire [29:0] PC;  // Program Counter
-    assign PC = (EX_PC_F == 0) ? IF_iaddr : EX_iaddr - 4;
+    assign PC = (EX_PC_F == 0) ? IF_iaddr : EX_iaddr ;
 
     /////////////////IF/////////////////
 
@@ -135,7 +135,7 @@ module RISC_TOY (
         	stall <= 0;
     	end else begin
         	// 데이터 의존성 조건: EX 단계의 결과를 ID 단계에서 사용
-		if (forwadB_EX) begin
+		if (forwardB_EX) begin
             		stall <= 1; // 스톨 활성화
         	end else begin
             		stall <= 0; // 스톨 해제
@@ -149,7 +149,7 @@ module RISC_TOY (
             IF_op <= 0;
             IF_instr <= 0;
 	    IF_iaddr <= 0;
-	    PC <= 0;
+	  //  PC <= 0;
 	end else if (!stall && IREQ == 1) begin
             IF_op <= INSTR[31:27];
             IF_instr <= INSTR;
