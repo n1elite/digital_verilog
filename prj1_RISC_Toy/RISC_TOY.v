@@ -150,7 +150,7 @@ module RISC_TOY (
             IF_instr <= 0;
 	    IF_iaddr <= 0;
 	    PC <= 0;
-	end else if (!stall) begin
+	end else if (!stall && IREQ == 1) begin
             IF_op <= INSTR[31:27];
             IF_instr <= INSTR;
 	    IF_iaddr <= PC + 4;
