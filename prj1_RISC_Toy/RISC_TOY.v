@@ -124,7 +124,7 @@ module RISC_TOY (
 
 	
     /////////////////PC/////////////////
-    reg [29:0] PC;  // Program Counter
+    wire [29:0] PC;  // Program Counter
     assign PC = (EX_PC_F == 0) ? IF_iaddr : EX_iaddr - 4;
 
     /////////////////IF/////////////////
