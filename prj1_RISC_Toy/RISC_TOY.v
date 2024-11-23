@@ -158,7 +158,7 @@ module RISC_TOY (
      end
 
 	assign IREQ = (stall) ? 0 : 1; 
-	assign IADDR = IF_iaddr;
+	assign IADDR = PC;
 
     /////////////////IF_ID/////////////////
 
