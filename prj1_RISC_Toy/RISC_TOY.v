@@ -94,7 +94,7 @@ module RISC_TOY (
 	reg [4:0] XM_op, XM_ra;                                     // opcode 5bit _ dest reg add
 	reg [31:0] XM_aluout, XM_memoryout, XM_instr;   // alu EX_ALU_out _ ID_valA _ ID_valB _ 어떤 계산 _ 어떤 계산
 	reg WEN;
-	reg [4:0] WI;
+	reg [4:0] WA;
 	reg [31:0] DI;
 
 
@@ -125,8 +125,7 @@ module RISC_TOY (
 	
     /////////////////PC/////////////////
     reg [29:0] PC;  // Program Counter
-    assign PC = (EX_PC_F == 0) ? IF_iaddr : EX_iaddr - 4;
-
+assign PC = (EX_PC_F == 0) ? IF_iaddr : EX_iaddr - 4;
     /////////////////IF/////////////////
 
 // 스톨 조건 및 해제
@@ -135,7 +134,7 @@ module RISC_TOY (
         	stall <= 0;
     	end else begin
         	// 데이터 의존성 조건: EX 단계의 결과를 ID 단계에서 사용
-		if (forwadB_EX) begin
+		if (forwardB_EX) begin
             		stall <= 1; // 스톨 활성화
         	end else begin
             		stall <= 0; // 스톨 해제
@@ -246,7 +245,6 @@ module RISC_TOY (
 
 	/////////////////ID_EX/////////////////
 	assign ALU_out = (forwardA_EX || forwardB_EX) ? ((ID_op == `ADDI) ? ALU_srcB + ID_imm :
-							 (ID_op == `ADD) ? ALU_srcA + ALU_srcB :
 							 (ID_op == `ANDI) ? ALU_srcB & ID_imm :
 							 (ID_op == `ORI)  ? ALU_srcB | ID_imm :
                 	 (ID_op == `MOVI) ? ID_imm :
@@ -270,7 +268,6 @@ module RISC_TOY (
 							 (ID_op == `ST) ? ID_imm + ALU_srcB :
 							 (ID_op == `STR) ? {ID_iaddr, 2'b0} + ID_imm : 0) :
 		((ID_op == `ADDI) ? ID_valB + ID_imm :
-		 (ID_op == `ADD) ? ID_valA + ID_valB :
                  	 (ID_op == `ANDI) ? ID_valB & ID_imm :
                 	 (ID_op == `ORI)  ? ID_valB | ID_imm :
                 	 (ID_op == `MOVI) ? ID_imm :
@@ -291,7 +288,7 @@ module RISC_TOY (
                 	 (ID_op == `LD) ? ID_imm + ID_valB :
                 	 (ID_op == `LDR) ? {ID_iaddr, 2'b0} + ID_imm :
                 	 (ID_op == `ST && ID_valA == 5'b11111) ? {15'b0, ID_imm[16:0]} :
-                	 (ID_op == `ST) ? ID_imm + ID_valB :
+                	 (ID_op == `ST ) ? ID_valB + ID_imm :
 		 (ID_op == `STR) ? {ID_iaddr, 2'b0} + ID_imm : 0);
 
 	assign ALU_PC = (ID_op == `BR && ID_instr[2:0] == 1) ? ID_valA :
@@ -307,8 +304,8 @@ module RISC_TOY (
                 	(ID_op == `J) ? {ID_iaddr, 2'b0} + ID_imm :
                 	(ID_op == `JL) ? {ID_iaddr, 2'b0} + ID_imm : 0;
 
-	
-	always @(posedge CLK or negedge RSTN) begin
+
+		always @(posedge CLK or negedge RSTN) begin
 		if(!RSTN) begin
 			EX_dest <= 0;
 			EX_op <= 0;
@@ -340,12 +337,13 @@ module RISC_TOY (
 			end
 		end
 	end
-	
+
 	assign DREQ = EX_csn;
     	assign DRW = EX_we;
     	assign DADDR = EX_ALU_out[31:2];
 	assign DWDATA = EX_valB;
 	/////////////////EX_MEM/////////////////
+	
     SRAM #(
         .BW(32),           // 데이터 폭 32비트 (기본값)
         .AW(10),           // 주소 폭 10비트 (기본값)
@@ -376,7 +374,7 @@ module RISC_TOY (
             XM_instr <= EX_instr;
         end
     end
-	assign WEN = (EX_op == `J) ? 0 : 1;
+	assign WEN = (EX_op == `J) ? 1 : 0;
 	assign WA = EX_dest;
 	assign DI = (EX_op == `LD || EX_op == `LDR) ? XM_memoryout : XM_aluout;
 
